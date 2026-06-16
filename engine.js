@@ -946,17 +946,57 @@ function _runEndingScene(route){
         advEl.style.display = 'none';
         nameEl.style.display = 'none';
         
-        // 엔딩 나레이션이 완전히 종료된 후 '처음으로' 버튼 출력
-        let html = `<div style="text-align:center; padding:16px 0; animation: fadeIn 1s ease-in-out;">`;
-        html += `<div style="font-size:10px;color:#888;letter-spacing:4px;margin-bottom:8px;">${data.title}</div>`;
-        html += `<div style="font-size:18px;color:#fff;letter-spacing:3px;font-weight:bold;margin-bottom:20px;">${data.main}</div>`;
-        if(data.credit && !data.noCredit) {
-          html += `<div style="font-size:11px;color:#666;line-height:2.2;margin-bottom:24px;">${data.credit.replace(/\n/g,'<br>')}</div>`;
-        }
-        html += `<button onclick="location.reload()" style="font-family:'Courier New', Courier, monospace; font-size:12px; font-weight:bold; background:#fff; color:#000; border:2px solid #000; padding:8px 24px; cursor:pointer; letter-spacing:2px; box-shadow: 2px 2px 0 #888;">[ 처음으로 ]</button>`;
-        html += `</div>`;
-        
-        choicesEl.innerHTML = html;
+        // 검은 화면으로 페이드 전환 후 엔딩 크레딧 표시
+        const fd = document.getElementById('fade');
+        fd.classList.add('in');
+        setTimeout(()=>{
+          // face-screen / loc-screen 닫고 검은 크레딧 오버레이 표시
+          document.getElementById('face-screen').classList.remove('on');
+          if(document.getElementById('loc-screen')) document.getElementById('loc-screen').classList.remove('on');
+
+          // 기존 크레딧 오버레이 있으면 제거
+          const old = document.getElementById('ending-credit-overlay');
+          if(old) old.remove();
+
+          const overlay = document.createElement('div');
+          overlay.id = 'ending-credit-overlay';
+          overlay.style.cssText = `
+            position:fixed;inset:0;background:#000;z-index:9500;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            font-family:'Courier New',Courier,monospace;
+            opacity:0;transition:opacity 1.2s ease;
+          `;
+
+          const imgName = data.title.toLowerCase().replace(/_/g,'-');
+
+          overlay.innerHTML = `
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;transform:translateY(-24px);">
+              <div style="font-size:10px;color:#444;letter-spacing:4px;">${data.title}</div>
+              <div style="font-size:22px;color:#fff;font-weight:bold;letter-spacing:3px;">${data.main}</div>
+              <img src="엔딩/${imgName}.png"
+                onerror="this.style.display='none'"
+                style="max-width:260px;max-height:180px;object-fit:contain;opacity:.85;border:1px solid #222;">
+              ${data.credit && !data.noCredit ? `<div style="font-size:10px;color:#444;line-height:2.2;margin-top:4px;">${data.credit.replace(/\n/g,'<br>')}</div>` : ''}
+            </div>
+            <button onclick="location.reload()"
+              style="position:fixed;right:28px;bottom:28px;
+                font-family:'Courier New',Courier,monospace;
+                font-size:11px;font-weight:bold;
+                background:#000;color:#555;
+                border:1px solid #333;
+                padding:7px 18px;cursor:pointer;letter-spacing:2px;
+                transition:color .15s,border-color .15s;"
+              onmouseover="this.style.color='#fff';this.style.borderColor='#fff';"
+              onmouseout="this.style.color='#555';this.style.borderColor='#333';">
+              ↺ 처음으로
+            </button>
+          `;
+
+          document.body.appendChild(overlay);
+          fd.classList.remove('in');
+          requestAnimationFrame(()=>{ overlay.style.opacity='1'; });
+        }, 600);
+
         return;
       }
 
