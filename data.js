@@ -64,6 +64,23 @@ const CHAT_SCRIPTS={
     {id:'CHAT_101_IDLE1', requireFlag:'CHAT_101_DONE', requireDay:2,
      msgs:[],
      taps:[{label:'별일 없으세요?',reply:[{f:'r',t:'...'},{f:'r',t:'왜요.'}]}]},
+    // Day6 E2A — 어제 결판 이후 여파
+    {id:'CHAT_D6_101_E2A', requireFlag:'EVT_D5_SHOWDOWN_DONE', requireDay:6,
+     msgs:[
+       {f:'r',t:'경비원님'},
+       {f:'r',t:'어제 일 때문에 연락하는 건 아니고요'},
+       {f:'r',t:'그냥요'},
+       {f:'r',t:'......'},
+       {f:'r',t:'별 거 아니에요'},
+     ],
+     taps:[
+       {label:'괜찮으세요?',
+        reply:[{f:'r',t:'......네'},{f:'r',t:'경비원님은요'}],
+        favor:+2, flag:'CHAT_D6_101_E2A_DONE'},
+       {label:'(그냥 넘어간다)',
+        reply:[],
+        flag:'CHAT_D6_101_E2A_DONE'},
+     ]},
   ],
 
   '102':[
@@ -131,6 +148,21 @@ const CHAT_SCRIPTS={
     {id:'CHAT_102_IDLE1', requireFlag:'CHAT_102_RESULT_DONE',
      msgs:[],
      taps:[{label:'요즘 어때요?',reply:[{f:'r',t:'그냥요'},{f:'r',t:'다음 오디션 준비 중이에요'}]}]},
+    // Day6 E2A — 어제 결판 이후 여파
+    {id:'CHAT_D6_102_E2A', requireFlag:'EVT_D5_SHOWDOWN_DONE', requireDay:6,
+     msgs:[
+       {f:'r',t:'형'},
+       {f:'r',t:'어제'},
+       {f:'r',t:'저 좀 이상한 말 했죠'},
+     ],
+     taps:[
+       {label:'괜찮아요.',
+        reply:[{f:'r',t:'......'},{f:'r',t:'아뇨 형은 그냥 하는 말 알아요'},{f:'r',t:'근데'}],
+        favor:+2, flag:'CHAT_D6_102_E2A_DONE'},
+       {label:'무슨 말이요.',
+        reply:[{f:'r',t:'......그냥요'},{f:'r',t:'됐어요'}],
+        favor:0, flag:'CHAT_D6_102_E2A_DONE'},
+     ]},
   ],
 
   '201':[
@@ -488,10 +520,36 @@ const DAY_SEQUENCE={
   // DAY 6 - 시연을 위한 매끄러운 진행 (얼굴 강제 전환 적용)
   // ─────────────────────────────────────────
   6:[
-    // Day6 시작 → 고재엽 채팅 도착
+    // E2A — 어제 결판 여파. 101/102 채팅 자동 도착
+    {id:'EVT_D6_101_E2A_PUSH', type:'chat_push', resId:'101',
+     trigger:null, delay:1500,
+     chatStepId:'CHAT_D6_101_E2A',
+     requireRoute:'END_2_A',
+    },
+    {id:'EVT_D6_102_E2A_PUSH', type:'chat_push', resId:'102',
+     trigger:'after:EVT_D6_101_E2A_PUSH',
+     delay:4000,
+     chatStepId:'CHAT_D6_102_E2A',
+     requireRoute:'END_2_A',
+    },
+    // E2A — 채팅 이후 1층 복도 결판 후속 씬 자동 오픈
+    {id:'EVT_D6_E2A_AFTERMATH', type:'face', resId:'101',
+     trigger:'after:EVT_D6_102_E2A_PUSH',
+     state:'EVT_D6_AFTERMATH',
+     delay:6000,
+     requireRoute:'END_2_A',
+    },
+    // E3 — Day6 시작 → 경비실 대기 씬 → 고재엽 채팅 도착
+    {id:'EVT_D6_E3_OPENING', type:'face', resId:'202',
+     trigger:null, delay:1000,
+     state:'EVT_D6_MORNING',
+     requireRoute:'END_3',
+    },
+    // E3 — 고재엽 채팅 도착 (대기 씬 이후)
     {id:'EVT_D6_202_CHAT', type:'chat_push', resId:'202',
      requireFlag:'AGREED_WITH_202',
-     trigger:null, delay:2000,
+     trigger:'after:EVT_D6_E3_OPENING',
+     delay:3000,
      chatStepId:'CHAT_D6_202',
     },
     // 채팅에서 "네. 오세요." 응답(D6_202_COMING 플래그) 후 → 경비실 대면 (EVT_D6_001) 강제 오픈
@@ -1184,6 +1242,88 @@ const FACE_SCRIPTS={
         '(더 말하지 않는다.)',
       ]},
       {favor:0, flags:[], lines:[]},
+    ],
+  },
+
+  // ── Day6 E2A — 결판 여파 씬 (1층 복도, 명성 혼자)
+  'EVT_D6_AFTERMATH':{
+    requireDay:6,
+    requireRoute:'END_2_A',
+    room:'1층 복도', loc:'1층 복도',
+    bg:'배경/1F복도.png', char:'x',
+    onEnd:null,
+    lines:[
+      '(1층 복도.),,',
+      '(계단 맨 아래 칸에 명성이 앉아 있다.)',
+      '(기타 케이스를 옆에 세워뒀다.),,',
+      '!102',
+      '(발소리 듣고 올려봤다.)',
+      {speaker:'명성',text:'어. 형.'},
+      {speaker:'경비',text:'거기서 뭐 해요.'},
+      {speaker:'명성',text:'그냥요. 방에 있기가 좀 그래서.'},
+      '(잠깐 침묵.)',
+      {speaker:'명성',text:'형.'},
+      {speaker:'경비',text:'네.'},
+      {speaker:'명성',text:'걔가 진짜로 그런 말 들었을 것 같아요?'},
+      {speaker:'경비',text:'......'},
+      {speaker:'명성',text:'제가 한 말인데 기억이 안 나는 게 맞는 건지.'},
+      {speaker:'명성',text:'술 먹으면 그런 말 할 사람이 나인지.'},
+      '(모르겠다는 표정이었다. 진짜로.)',
+      {speaker:'명성',text:'형은 어떻게 생각해요.'},
+    ],
+    choices:['그럴 수도 있어요.','모르겠어요.','(말 없이 옆에 앉는다)'],
+    choiceResults:[
+      {favor:0, flags:['EVT_D6_AFTERMATH_DONE'], lines:[
+        {speaker:'명성',text:'......그렇죠.'},
+        {speaker:'명성',text:'그럼 나쁜 새끼네 저.'},
+        {speaker:'경비',text:'그건 모르죠.'},
+        {speaker:'명성',text:'뭐가 모르냐고요.'},
+        {speaker:'경비',text:'기억 못 하는 사람이 나쁜 사람인지 아닌지.'},
+        '(명성이 경비를 봤다.)',
+        {speaker:'명성',text:'......됐어요. 고마워요.'},
+        '(일어섰다. 기타 케이스 들었다.)',
+        '!102x',
+      ], _favorMap:{'102':+3}},
+      {favor:0, flags:['EVT_D6_AFTERMATH_DONE'], lines:[
+        {speaker:'명성',text:'......그렇죠.'},
+        {speaker:'명성',text:'뭐 됐어요.'},
+        '(일어섰다. 기타 케이스 들었다.)',
+        '!102x',
+      ], _favorMap:{'102':+1}},
+      {favor:0, flags:['EVT_D6_AFTERMATH_DONE'], lines:[
+        '(앉았다.)',
+        '(아무 말 없이 잠깐 앉아 있었다.)',
+        {speaker:'명성',text:'......형 되게 이상한 경비원이에요.'},
+        {speaker:'명성',text:'근데 좋아요.'},
+        '(일어섰다. 기타 케이스 들었다.)',
+        '!102x',
+      ], _favorMap:{'102':+5}},
+    ],
+  },
+
+  // ── Day6 E3 — 아침 경비실 대기 씬
+  'EVT_D6_MORNING':{
+    requireDay:6,
+    requireRoute:'END_3',
+    _forceOpen:true,
+    room:'경비실', loc:'경비실',
+    bg:'배경/오프닝.png', char:'x',
+    onEnd:null,
+    lines:[
+      '(아침이다.),,',
+      '(어젯밤 게시판 마지막 글이 계속 생각났다.),,',
+      '(\"경비원님도 알게 될 거예요.\"),,',
+      '(경비실 모니터를 켰다. CCTV 화면. 1층 복도. 2층 복도. 쓰레기장.),,',
+      '(조용하다. 항상 조용하다.),,',
+      '(고재엽이 오겠다고 했다.)',
+      '(뭘 갖고 오는지는 몰랐다.),,',
+      '(창밖을 봤다. 빌라가 보인다.)',
+      '(불이 켜진 창이 두 개.)',
+      '(오늘로 6일째다.),,',
+    ],
+    choices:['(기다린다)'],
+    choiceResults:[
+      {favor:0, flags:['EVT_D6_MORNING_DONE'], lines:[]},
     ],
   },
 

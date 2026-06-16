@@ -528,6 +528,24 @@ const _DC = {
       {f:'s',t:'무슨 뜻이에요?'},
       {f:'r',t:'모르겠어요. 조심하세요.'},
     ],
+    // E2A — 어제 결판 여파
+    '101_e2a':[
+      {f:'r',t:'경비원님'},
+      {f:'r',t:'어제 일 때문에 연락하는 건 아니고요'},
+      {f:'r',t:'그냥요'},
+      {f:'r',t:'......'},
+      {f:'r',t:'별 거 아니에요'},
+      {f:'s',t:'괜찮으세요?'},
+      {f:'r',t:'......네'},
+    ],
+    '102_e2a':[
+      {f:'r',t:'형'},
+      {f:'r',t:'어제'},
+      {f:'r',t:'저 좀 이상한 말 했죠'},
+      {f:'s',t:'괜찮아요.'},
+      {f:'r',t:'......'},
+      {f:'r',t:'아뇨 형은 그냥 하는 말 알아요'},
+    ],
   },
 };
 
@@ -666,6 +684,10 @@ function _autoCompleteDayEvents(day){
     const qualifiesForEnd3 = route === 'END_3' || clues >= 3 || (clues >= 2 && RES['202'].favor >= 70);
     if(qualifiesForEnd3 && dc['202']){
       chatH['202'].push(...dc['202']);
+    }
+    if(route === 'END_2_A'){
+      if(dc['101_e2a']) chatH['101'].push(...dc['101_e2a']);
+      if(dc['102_e2a']) chatH['102'].push(...dc['102_e2a']);
     }
   } else {
     Object.entries(dc).forEach(([resId, msgs])=>{
@@ -1609,7 +1631,10 @@ function openFace(resId){
       const candidate=FACE_SCRIPTS[evtKey];
       const flagOk=!candidate.requireFlag||getFlag(candidate.requireFlag);
       const dayOk=!candidate.requireDay||(currentDay>=candidate.requireDay);
-      if(flagOk&&dayOk) scripted=candidate;
+      const routeOk=!candidate.requireRoute||(_devEndingRoute===candidate.requireRoute);
+      // 복도/장소 씬은 doVisit(직접 방문)으로 열리면 안 됨 — loc이 호수와 다른 경우 폴백
+      const isLocScene = candidate.loc && !candidate.loc.includes(resId+'호') && !candidate._forceOpen;
+      if(flagOk&&dayOk&&routeOk&&!isLocScene) scripted=candidate;
     }
     if(!scripted) scripted=FACE_SCRIPTS['DEFAULT_VISIT_'+resId]||FACE_SCRIPTS['default'];
   }
