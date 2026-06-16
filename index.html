@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>행복빌라 관리시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Courier New',Courier,monospace;}
+body{
+  /* 고전 회색 바탕 — CRT 모니터 주변 베젤 색 */
+  background-color:#2a2a2a;
+  background-image:
+    radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+}
+
+/* ══════════════════════════════
+   오프닝 화면
+══════════════════════════════ */
+#opening{
+  position:fixed;inset:0;z-index:99000;
+  background:#000;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-end;
+  transition:opacity .8s ease;
+}
+#opening.fade-out{opacity:0;pointer-events:none;}
+#op-bg{
+  position:absolute;inset:0;
+  background-image:url('배경/오프닝.png');
+  background-size:cover;background-position:center;
+  z-index:0;
+  transition:opacity 1.2s ease;
+  opacity:0;
+}
+#op-bg.show{opacity:1;}
+/* 대화창과 동일한 디자인 */
+#op-dbox-wrap{
+  position:relative;z-index:1;
+  width:100%;
+  padding:20px 16px 32px;
+  background-color:#000;
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 1px,transparent 0,transparent 40px);
+  border-top:2px solid #fff;
+  flex-shrink:0;
+}
+#op-dbox{
+  border:2px solid #fff;
+  padding:18px 22px 14px;
+  position:relative;
+  min-height:140px;
+  display:flex;flex-direction:column;gap:10px;
+}
+#op-text{
+  font-size:13px;color:#ddd;line-height:2;
+  font-family:'Courier New',Courier,monospace;
+  min-height:80px;
+  white-space:pre-wrap;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+#op-advance{
+  font-size:10px;color:#444;text-align:right;letter-spacing:1px;
+  animation:blink 1s step-end infinite;
+}
+/* 오프닝 전용 CRT */
+#opening::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);
+  pointer-events:none;z-index:2;
+}
+.st-fine-med{ /* 미세 중간 회색 ~42% — 탭버튼용 */
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.95) .65px,transparent .65px),
+    radial-gradient(circle,rgba(255,255,255,.95) .65px,transparent .65px);
+  background-size:2.5px 2.5px;
+  background-position:0 0,1.25px 1.25px;
+}
+.st-30{ /* 30% 중간 스크린톤 */
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.5) 1.3px,transparent 1.3px),
+    radial-gradient(circle,rgba(255,255,255,.5) 1.3px,transparent 1.3px);
+  background-size:6px 6px;background-position:0 0,3px 3px;
+}
+.st-45{ /* 45% */
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px),
+    radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px);
+  background-size:5px 5px;background-position:0 0,2.5px 2.5px;
+}
+.st-diag{
+  background-color:#000;
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0,rgba(255,255,255,.12) 1px,transparent 0,transparent 50%);
+  background-size:6px 6px;
+}
+.st-5{
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.18) .8px,transparent .8px),
+    radial-gradient(circle,rgba(255,255,255,.18) .8px,transparent .8px);
+  background-size:8px 8px;background-position:0 0,4px 4px;
+}
+.blink{animation:blink .8s step-end infinite;}
+@keyframes blink{50%{opacity:0}}
+
+/* ══════════════════════════════
+   SITE SCREEN
+══════════════════════════════ */
+#G{
+  position:fixed;inset:0;
+  overflow:hidden;
+}
+#G.hidden{display:none;}
+
+/* game bg */
+#G-inner{
+  width:100%;height:100%;
+  position:relative;overflow:hidden;
+}
+#G-inner::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);pointer-events:none;z-index:9999;}
+
+/* ── 고전 입체 테두리 (Win95 / 레트로 모니터 베젤) ── */
+#G-inner::before{
+  content:'';
+  position:absolute;inset:0;
+  pointer-events:none;
+  z-index:9998;
+  background:radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,.75) 100%);
+  /* 바깥쪽 베젤: 위/왼=밝음(돌출), 아래/오른=어두움(그림자) */
+  box-shadow:
+    /* 1단: 내부 하이라이트 */
+    inset 2px 2px 0 rgba(255,255,255,.18),
+    inset -2px -2px 0 rgba(0,0,0,.6),
+    /* 2단: 메인 테두리 */
+    inset 4px 4px 0 rgba(255,255,255,.06),
+    inset -4px -4px 0 rgba(0,0,0,.4),
+    /* 3단: 외곽 프레임 */
+    inset 6px 6px 0 rgba(255,255,255,.03),
+    inset -6px -6px 0 rgba(0,0,0,.3);
+}
+
+/* TOP BAR — 터미널 스타일 */
+#topbar{
+  position:absolute;top:0;left:0;right:0;height:52px;
+  background:#000;
+  /* 3D 베벨 하단선 */
+  border-bottom:none;
+  box-shadow:0 1px 0 #aaa, 0 2px 0 #333, 0 3px 0 #888, 0 4px 0 #111;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;z-index:100;
+  /* 상단바 하단에 얇은 스크린톤 줄 */
+  box-shadow:0 3px 0 #fff, 0 5px 0 rgba(255,255,255,.15);
+}
+#tb-l{display:flex;align-items:center;gap:12px;}
+.tb-sys{
+  background:#fff;color:#000;
+  font-size:10px;font-weight:bold;padding:4px 10px;
+  letter-spacing:3px;flex-shrink:0;
+}
+.tb-title{font-size:22px;color:#fff;font-weight:bold;letter-spacing:3px;text-shadow:1px 1px 0 #555,-1px -1px 0 #000;}
+.tb-online{
+  font-size:9px;color:#777;letter-spacing:2px;
+  border:1px solid #333;padding:2px 7px;
+}
+.tb-online .blink{color:#fff;}
+#tb-r{display:flex;align-items:center;gap:10px;}
+.daybadge{
+  background:#fff;color:#000;
+  font-size:9px;font-weight:bold;
+  padding:3px 12px;letter-spacing:3px;
+}
+#clk{font-size:11px;color:#999;letter-spacing:2px;}
+
+#layout{position:absolute;top:56px;left:0;right:0;bottom:34px;display:grid;grid-template-columns:220px 1fr;}
+
+
+/* SIDEBAR — 시각 개선 */
+#sb{
+  /* 3D 베벨 구분선: 밝음→어두움 */
+  border-right:none;
+  box-shadow: 1px 0 0 #aaa, 2px 0 0 #333, 3px 0 0 #888, 4px 0 0 #111;
+  display:flex;flex-direction:column;
+  overflow:hidden;position:relative;
+}
+#sb,#sb *:not(.rb):not(.rb *):not(#hapbox-hdr):not(#reslbl){background:transparent;}
+#sb-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#sb>*{position:relative;z-index:1;}
+
+/* 행복도 헤더 — 반전 (흰 배경 + 검정 텍스트) */
+#hapbox-hdr{
+  background:#fff;color:#000;
+  font-size:10px;font-weight:bold;letter-spacing:2px;
+  padding:7px 10px;
+  border-bottom:2px solid #000;
+  text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+#hapbox-hdr::before{content:'▣';font-size:8px;}
+#hapbox-body{padding:8px 10px 10px;}
+#hap-track{
+  width:100%;height:12px;
+  border:1px solid #fff;
+  background:#000;
+  position:relative;margin-bottom:4px;overflow:hidden;
+}
+#hap-fill{height:100%;background:#fff;transition:width .6s;position:relative;}
+#hap-fill::after{content:'';position:absolute;right:-4px;top:0;width:8px;height:100%;background:repeating-linear-gradient(180deg,#fff 0,#fff 3px,#000 3px,#000 6px);}
+#hap-pct{font-size:11px;color:#fff;text-align:right;font-weight:bold;}
+
+/* 주민목록 헤더 — 반전 */
+#reslbl{
+  background:#fff;color:#000;
+  padding:6px 10px;font-size:10px;font-weight:bold;
+  letter-spacing:2px;text-transform:uppercase;
+  border-top:3px solid #000;
+  border-bottom:2px solid #000;
+  display:flex;align-items:center;gap:6px;
+}
+#reslbl::before{content:'▣';font-size:8px;}
+/* 주민 버튼 — 층수 표시, 상태 강화 */
+#reslist{flex:1;overflow-y:auto;min-height:0;}
+#reslist::-webkit-scrollbar{width:3px;background:transparent;}
+#reslist::-webkit-scrollbar-thumb{background:#333;}
+.rb{
+  width:100%;background:rgba(0,0,0,.7);border:none;color:#fff;
+  font-family:'Courier New',Courier,monospace;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  padding:9px 10px 8px;text-align:left;cursor:pointer;
+  position:relative;display:grid;
+  grid-template-columns:28px 1fr;
+  grid-template-rows:auto auto;
+  gap:2px 4px;
+  transition:background .1s;
+}
+.rb:hover{background:rgba(255,255,255,.1);}
+.rb.sel{background:#fff;color:#000;}
+/* 왼쪽: 층 번호 세로 */
+.rfloor{
+  grid-row:1/3;grid-column:1;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:#444;
+  border:1px solid #2a2a2a;
+  border-radius:0;letter-spacing:0;
+  writing-mode:vertical-rl;text-orientation:mixed;
+  padding:3px 0;
+}
+.rb.sel .rfloor{color:#888;border-color:#888;}
+.rn{grid-column:2;font-size:9px;color:#666;letter-spacing:1px;}
+.rb.sel .rn{color:#888;}
+.rm{grid-column:2;font-size:12px;font-weight:bold;}
+.rbar{
+  grid-column:1/3;
+  width:100%;height:3px;
+  background:rgba(255,255,255,.07);
+  margin-top:3px;
+}
+.rb.sel .rbar{background:#bbb;}
+.rbf{height:100%;background:rgba(255,255,255,.3);}
+.rb.sel .rbf{background:#555;}
+.rdot{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:7px;height:7px;background:#0f5;border-radius:50%;
+  animation:blink .6s step-end infinite;
+  box-shadow:0 0 7px rgba(0,255,90,.8);
+}
+.rb.sel .rdot{background:#0b3;box-shadow:0 0 5px rgba(0,255,90,.65);}
+
+/* 플레이어 얼굴 */
+#player-face{
+  flex-shrink:0;width:100%;aspect-ratio:1;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  background:transparent;
+  border-top:2px solid rgba(255,255,255,.3);
+}
+#player-face::before{
+  content:'SECURITY GUARD';
+  position:relative;z-index:1;
+  font-size:7px;color:#222;letter-spacing:2px;font-weight:bold;
+  border:1px solid #222;padding:2px 6px;
+}
+#player-face::after{
+  content:'ID-001';
+  position:relative;z-index:1;font-size:7px;color:#1a1a1a;letter-spacing:2px;
+}
+/* 하단 체커보드 줄 */
+.pf-checker{position:absolute;bottom:0;left:0;right:0;height:5px;background:repeating-conic-gradient(#fff 0% 25%,#000 0% 50%);background-size:8px 8px;z-index:2;}
+
+/* MAIN — 더 어둡게, 깊이감 */
+#main{
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+  background:#060606;
+  box-shadow:inset 0 0 80px rgba(0,0,0,.6);
+}
+
+/* TAB BAR */
+#tabbar{
+  display:flex;align-items:flex-end;padding:0 8px;
+  background:#000;
+  border-bottom:none;
+  box-shadow:0 1px 0 #999, 0 2px 0 #222, 0 3px 0 #777, 0 4px 0 #000;
+  flex-shrink:0;position:relative;z-index:1;
+}
+#tabbar-bg{display:none;}
+
+/* ── 탭버튼 ── */
+/* 비활성: 회색 입체 버튼, 하단이 흰 선과 같은 레벨 → 패널 테두리 뒤처럼 보임 */
+.tb{
+  font-family:'Courier New',Courier,monospace;font-size:14px;font-weight:bold;
+  color:#888;
+  background:#333;
+  border-top:2px solid #666;
+  border-left:2px solid #666;
+  border-right:2px solid #111;
+  border-bottom:3px solid #fff;
+  padding:0 22px;
+  height:32px;
+  margin-right:3px;
+  margin-bottom:-3px;
+  cursor:pointer;letter-spacing:2px;
+  display:flex;align-items:center;gap:6px;
+  position:relative;z-index:1;
+  box-shadow:inset 0 -3px 5px rgba(0,0,0,.5);
+  transition:color .1s,background .1s;
+}
+.tb:hover{color:#ccc;background:#444;border-top-color:#888;border-left-color:#888;}
+
+/* 활성: 패널 위로 튀어오름 */
+.tb.act{
+  height:40px;
+  color:#fff;
+  background:#111;
+  border-top:2px solid #fff;
+  border-left:2px solid #fff;
+  border-right:2px solid #fff;
+  border-bottom:3px solid #111;
+  box-shadow:none;
+  z-index:3;
+  font-size:15px;
+}
+.tndot{width:8px;height:8px;background:#ff3b30;border-radius:50%;flex-shrink:0;animation:blink .6s step-end infinite;box-shadow:0 0 7px rgba(255,59,48,.85);}
+#tnd-clue{background:#0f5;box-shadow:0 0 7px rgba(0,255,90,.85);}
+.tb.act .tndot{background:#ff3b30;}
+.tb.act #tnd-clue{background:#0f5;}
+
+/* ══ 호감도 변화 피드백 ══ */
+.favor-float{display:none;} /* 구 스타일 비활성 */
+@keyframes floatUp{
+  0%{opacity:1;transform:translateX(-50%) translateY(0);}
+  80%{opacity:.8;}
+  100%{opacity:0;transform:translateX(-50%) translateY(-50px);}
+}
+/* 중앙 호감도 알림 — favor-toast 디자인 그대로 중앙에 */
+#favor-center{
+  position:fixed;left:50%;top:38%;
+  transform:translateX(-50%);
+  font-family:'Courier New',Courier,monospace;
+  font-size:15px;font-weight:bold;
+  padding:8px 22px;border:2px solid rgba(255,255,255,.7);
+  background:rgba(0,0,0,.92);letter-spacing:2px;
+  z-index:19999;opacity:0;pointer-events:none;
+  transition:opacity .2s;white-space:nowrap;
+}
+#favor-center.show{opacity:1;}
+#favor-center.pos{color:#fff;border-color:#fff;}
+#favor-center.neg{color:#fff;border-color:#fff;}
+/* 대면 우측 호감도 기록 로그 */
+#face-favor-log{
+  flex-shrink:0;
+  padding:6px 10px;
+  border-top:1px solid rgba(255,255,255,.15);
+  border-bottom:1px solid rgba(255,255,255,.15);
+  display:flex;flex-direction:column;gap:3px;
+  max-height:80px;overflow-y:auto;
+  background:rgba(0,0,0,.3);
+}
+#face-favor-log::-webkit-scrollbar{width:2px;}
+.ffl-item{
+  font-size:10px;letter-spacing:1px;
+  display:flex;justify-content:space-between;
+  opacity:.8;
+}
+.ffl-item.pos{color:#fff;}
+.ffl-item.neg{color:#555;}
+
+/* ══ 단서 패널 ══ */
+#pn-clues.on{flex-direction:column;overflow-y:auto;}
+#pn-clues.on::-webkit-scrollbar{width:3px;background:#000;}
+#clue-hdr{background:#fff;color:#000;padding:8px 14px;font-size:10px;font-weight:bold;letter-spacing:2px;border-bottom:2px solid #000;flex-shrink:0;text-transform:uppercase;}
+#clue-list{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.clue-item{
+  border:1px solid #fff;padding:12px 14px;position:relative;
+  background-color:#000;
+  background-image:radial-gradient(circle,rgba(255,255,255,.06) .8px,transparent .8px);
+  background-size:6px 6px;
+}
+.clue-item::before{content:'[CLUE]';position:absolute;top:-10px;left:10px;background:#000;border:1px solid #fff;font-size:8px;color:#fff;padding:1px 6px;letter-spacing:2px;}
+.clue-id{font-size:9px;color:#666;margin-bottom:4px;letter-spacing:1px;}
+.clue-name{font-size:13px;color:#fff;font-weight:bold;margin-bottom:5px;}
+.clue-desc{font-size:11px;color:#666;line-height:1.8;}
+#clue-empty{color:#222;font-size:11px;margin:auto;text-align:center;padding:20px;line-height:2;}
+
+/* 쓰레기장/흡연실 이동 버튼 */
+.cc-goto{
+  font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:bold;
+  background:#001a00;border:1px solid #00cc44;color:#00cc44;
+  padding:4px 10px;cursor:pointer;letter-spacing:1px;
+  transition:background .1s,color .1s;
+}
+.cc-goto:hover{background:#003300;color:#00ff55;border-color:#00ff55;}
+
+/* 장소 대면 화면 — CCTV에서 이동하는 야외 장소 */
+#loc-screen{
+  position:fixed;inset:0;
+  display:none;flex-direction:column;
+  background:#000;z-index:8500;
+}
+#loc-screen.on{display:flex;}
+#loc-screen::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);pointer-events:none;z-index:9999;}
+#loc-hdr{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 16px;height:48px;
+  background:#000;border-bottom:2px solid #fff;
+  flex-shrink:0;z-index:10;
+}
+#loc-hdr-title{font-size:13px;color:#fff;font-weight:bold;letter-spacing:3px;}
+#loc-back{
+  font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:bold;
+  background:#000;border:1px solid #fff;color:#fff;
+  padding:5px 14px;cursor:pointer;letter-spacing:2px;
+  transition:background .1s,color .1s;
+}
+#loc-back:hover{background:#fff;color:#000;}
+#loc-main{flex:1;display:flex;overflow:hidden;position:relative;}
+/* 배경 이미지 */
+#loc-bg-img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:0;
+  filter:grayscale(1) contrast(1.2);
+}
+#loc-bg-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:rgba(0,0,0,.45);
+  background-image:radial-gradient(circle,rgba(255,255,255,.08) .8px,transparent .8px);
+  background-size:6px 6px;
+}
+/* 장소 표시 박스 */
+#loc-namebox{
+  position:absolute;top:14px;left:14px;z-index:5;
+  background:#000;border:2px solid #fff;
+  padding:4px 14px;
+  font-size:12px;color:#fff;font-weight:bold;letter-spacing:2px;
+}
+/* 장소 캐릭터 스프라이트 */
+#loc-sprites{
+  position:absolute;inset:0;z-index:3;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.loc-sprite-img{
+  height:80%;width:auto;object-fit:contain;
+  filter:grayscale(1) contrast(1.15);
+}
+/* 장소 대화창 */
+#loc-dbox-wrap{
+  position:absolute;bottom:0;left:0;right:0;z-index:6;
+  height:200px;padding:14px 16px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,.95) 30%);
+}
+#loc-dbox{
+  border:2px solid #fff;height:100%;
+  padding:10px 14px 8px;
+  position:relative;display:flex;flex-direction:column;gap:6px;
+  background:rgba(0,0,0,.8);
+}
+#loc-dname{
+  position:absolute;top:-14px;left:12px;
+  background:#000;border:2px solid #fff;
+  padding:2px 12px;font-size:11px;color:#fff;font-weight:bold;letter-spacing:1px;
+}
+#loc-dtext{
+  font-size:13px;color:#ddd;line-height:1.9;flex:1;overflow-y:auto;cursor:pointer;
+}
+#loc-dtext::-webkit-scrollbar{width:2px;}
+#loc-choices{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.loc-choice{
+  font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:bold;
+  background:#666;color:#000;
+  border-top:2px solid #999;border-left:2px solid #999;
+  border-bottom:2px solid #222;border-right:2px solid #222;
+  box-shadow:2px 2px 0 #000;
+  padding:7px 12px;cursor:pointer;text-align:left;
+  transition:all .08s;
+}
+.loc-choice::before{content:'▶ ';font-size:10px;color:#222;}
+.loc-choice:hover{background:#888;transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
+.loc-choice:active{transform:translate(2px,2px);box-shadow:none;background:#555;}
+#loc-advance{font-size:10px;color:#444;text-align:right;letter-spacing:1px;animation:blink 1s step-end infinite;flex-shrink:0;}
+/* ══ 호감도 변화 토스트 ══ */
+#favor-toast{
+  position:fixed;top:62px;right:16px;
+  font-family:'Courier New',Courier,monospace;
+  font-size:12px;font-weight:bold;
+  padding:6px 14px;border:1px solid rgba(255,255,255,.4);
+  background:rgba(0,0,0,.92);letter-spacing:2px;
+  z-index:19998;opacity:0;pointer-events:none;
+  transition:opacity .25s;white-space:nowrap;
+}
+#favor-toast.show{opacity:1;}
+#favor-toast.pos{color:#fff;border-color:rgba(255,255,255,.6);}
+#favor-toast.neg{color:#666;border-color:#444;}
+
+/* ══ 설정 버튼 / 패널 ══ */
+#settings-btn{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:#fff;border:2px solid #fff;color:#000;
+  font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:bold;
+  padding:3px 10px;cursor:pointer;letter-spacing:2px;
+  transition:all .1s;z-index:201;
+}
+#settings-btn:hover{background:#000;color:#fff;border-color:#fff;}
+#settings-panel{
+  position:fixed;right:14px;bottom:46px;width:560px;
+  background:#000;border:1px solid #fff;
+  font-family:'Courier New',Courier,monospace;
+  z-index:9990;display:none;flex-direction:column;
+  box-shadow:6px 6px 0 rgba(0,0,0,.9);
+}
+#settings-panel.on{display:flex;}
+#settings-hdr{
+  background:#fff;color:#000;font-size:13px;font-weight:bold;
+  letter-spacing:3px;padding:10px 16px;text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
+}
+#settings-hdr button{
+  background:#000;color:#fff;border:none;cursor:pointer;
+  font-family:'Courier New',Courier,monospace;font-size:16px;padding:0 6px;
+}
+#settings-body{padding:24px 20px;display:flex;flex-direction:column;gap:22px;}
+.s-row{display:flex;flex-direction:column;gap:10px;}
+.s-lbl{
+  font-size:12px;color:#888;letter-spacing:2px;text-transform:uppercase;
+  display:flex;justify-content:space-between;
+}
+.s-lbl em{font-style:normal;color:#555;}
+.s-ctrl{display:flex;align-items:center;gap:14px;}
+.s-mute{
+  background:transparent;border:1px solid #444;color:#666;
+  font-family:'Courier New',Courier,monospace;font-size:12px;
+  padding:5px 14px;cursor:pointer;letter-spacing:1px;flex-shrink:0;
+  transition:all .1s;
+}
+.s-mute:hover{border-color:#aaa;color:#aaa;}
+.s-mute.muted{border-color:#fff;color:#fff;background:#1a1a1a;}
+input[type=range].s-slider{
+  flex:1;-webkit-appearance:none;height:4px;
+  background:#333;outline:none;cursor:pointer;
+}
+input[type=range].s-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;background:#fff;cursor:pointer;
+}
+input[type=range].s-slider::-moz-range-thumb{
+  width:16px;height:16px;background:#fff;border:none;cursor:pointer;
+}
+.s-divider{height:1px;background:#1a1a1a;margin:2px 0;}
+
+#board-modal{
+  display:none;position:absolute;inset:0;background:#000;z-index:50;
+  flex-direction:column;
+}
+#board-modal.on{display:flex;}
+#bm-hdr{
+  background:#fff;color:#000;
+  padding:8px 14px;font-size:10px;font-weight:bold;
+  letter-spacing:2px;border-bottom:2px solid #000;
+  flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  text-transform:uppercase;
+}
+#bm-hdr button{font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:bold;background:#fff;border:1px solid #999;color:#555;padding:2px 8px;cursor:pointer;border-top:1px solid #bbb;border-left:1px solid #bbb;border-bottom:1px solid #333;border-right:1px solid #333;}
+#bm-hdr button:hover{background:#000;color:#fff;border-color:#fff;}
+#bm-body{flex:1;padding:20px;overflow-y:auto;}
+#bm-body::-webkit-scrollbar{width:3px;background:#000;}
+#bm-meta{font-size:10px;color:#555;margin-bottom:10px;letter-spacing:1px;}
+#bm-title{font-size:16px;color:#fff;font-weight:bold;margin-bottom:16px;line-height:1.5;border-bottom:1px solid #222;padding-bottom:12px;}
+#bm-content{font-size:13px;color:#999;line-height:2.2;}
+
+/* ══ Day 진행 버튼 ══ */
+#day-btn{
+  font-family:'Courier New',Courier,monospace;font-size:9px;font-weight:bold;
+  background:#000;color:#555;
+  border:1px solid #444;
+  padding:3px 10px;cursor:pointer;letter-spacing:1px;
+  transition:all .1s;
+}
+#day-btn:hover{background:#fff;color:#000;border-color:#fff;}
+/* 엔딩 선택 드롭다운 */
+#ending-menu{
+  position:absolute;top:100%;right:0;margin-top:4px;
+  background:#000;border:1px solid #fff;
+  display:none;flex-direction:column;
+  z-index:9999;min-width:140px;
+  font-family:'Courier New',Courier,monospace;
+}
+#ending-menu.on{display:flex;}
+.em-label{
+  font-size:8px;color:#444;letter-spacing:2px;
+  padding:5px 10px 3px;border-bottom:1px solid #222;
+  text-transform:uppercase;
+}
+.em-btn{
+  font-family:'Courier New',Courier,monospace;font-size:10px;
+  background:#000;color:#888;border:none;border-bottom:1px solid #1a1a1a;
+  padding:7px 12px;cursor:pointer;text-align:left;letter-spacing:1px;
+  transition:background .1s,color .1s;
+}
+.em-btn:hover{background:#fff;color:#000;}
+.em-btn.sel{color:#fff;background:#111;border-left:2px solid #fff;}
+#day-btn-wrap{position:relative;display:inline-flex;align-items:center;gap:4px;}
+#day-go-btn{
+  font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:bold;
+  background:#fff;border:2px solid #fff;color:#000;
+  padding:3px 8px;cursor:pointer;letter-spacing:1px;
+  transition:all .1s;
+}
+#day-go-btn:hover{background:#000;color:#fff;}
+.rough-frame{position:relative;}
+.rough-frame::before{
+  content:'';position:absolute;inset:4px;
+  border:1px solid rgba(255,255,255,.07);
+  pointer-events:none;z-index:1;
+}
+.rough-frame::after{
+  content:'';position:absolute;inset:0;
+  pointer-events:none;z-index:2;
+  background:
+    radial-gradient(circle,rgba(255,255,255,.6) 1.5px,transparent 1.5px) 5px 5px/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px) 9px 5px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px) 5px 9px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px) 13px 6px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px) 6px 13px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.6) 1.5px,transparent 1.5px) calc(100% - 5px) 5px/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px) calc(100% - 9px) 5px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px) calc(100% - 13px) 8px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.6) 1.5px,transparent 1.5px) 5px calc(100% - 5px)/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px) 9px calc(100% - 5px)/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px) 5px calc(100% - 9px)/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.6) 1.5px,transparent 1.5px) calc(100% - 5px) calc(100% - 5px)/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px) calc(100% - 9px) calc(100% - 5px)/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px) calc(100% - 5px) calc(100% - 9px)/2px 2px no-repeat;
+}
+
+#parea{flex:1;overflow:hidden;position:relative;}
+
+/* ── 패널 공통 — 절대 포지션 + opacity 트랜지션 ── */
+.pn{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(8px);
+  transition:opacity .22s ease-out, transform .22s ease-out;
+  z-index:1;
+}
+.pn.on{
+  opacity:1;
+  pointer-events:all;
+  transform:translateY(0);
+  z-index:2;
+}
+.pn.closing{
+  opacity:0;
+  transform:translateY(-6px);
+  transition:opacity .15s ease-in, transform .15s ease-in;
+}
+#parea.no-panel-anim .pn{
+  transition:none!important;
+}
+/* 각 패널 레이아웃 특이사항 — cctv는 별도 섹션에서 정의 */
+#pn-res{flex-direction:row;}
+#pn-complaints{flex-direction:row;}
+#pn-board{overflow-y:auto;}
+#pn-clues{overflow-y:auto;}
+#pn-log{flex-direction:column;}
+
+/* ══════════════════════════════
+   홈 화면 — iPad 위젯 스타일
+══════════════════════════════ */
+#pn-home{
+  position:absolute;inset:0;
+  overflow:hidden;
+  background-color:#111;
+  background-image:url('배경/홈배경.png');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  display:block!important;
+}
+#pn-home::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(0,0,0,.38);
+  pointer-events:none;z-index:1;
+}
+#widget-canvas{
+  position:absolute;inset:0;z-index:2;
+  overflow:hidden;
+}
+/* 위젯 공통 */
+.widget{
+  position:absolute;
+  border:1px solid rgba(255,255,255,.22);
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  font-family:'Courier New',Courier,monospace;
+  color:#fff;
+  overflow:hidden;
+  user-select:none;
+  box-sizing:border-box;
+  min-width:80px;min-height:50px;
+}
+.widget.dragging{
+  box-shadow:0 14px 44px rgba(0,0,0,.85);
+  border-color:rgba(255,255,255,.6);
+  z-index:999!important;
+  cursor:grabbing;
+}
+/* 리사이즈 핸들 */
+.w-resize{
+  position:absolute;right:0;bottom:0;
+  width:16px;height:16px;cursor:se-resize;z-index:10;
+  background:linear-gradient(135deg,transparent 50%,rgba(255,255,255,.2) 50%);
+  opacity:0;transition:opacity .15s;
+}
+.widget:hover .w-resize{opacity:1;}
+/* 위젯 헤더 — drag handle */
+.w-hdr{
+  background:rgba(255,255,255,.06);
+  border-bottom:1px solid rgba(255,255,255,.1);
+  padding:5px 8px;
+  font-size:11px;letter-spacing:2px;color:#aaa;
+  display:flex;justify-content:space-between;align-items:center;
+  text-transform:uppercase;
+  cursor:grab;
+  flex-shrink:0;
+  height:28px;
+}
+.w-hdr:active{cursor:grabbing;}
+/* 헤더 오른쪽 버튼 그룹 */
+.w-hdr-btns{display:flex;align-items:center;gap:4px;}
+/* 최소화 버튼 */
+.w-min{
+  width:16px;height:13px;
+  background:transparent;border:1px solid rgba(255,255,255,.2);
+  color:#777;font-size:11px;font-weight:bold;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;line-height:1;
+  font-family:'Courier New',Courier,monospace;
+  flex-shrink:0;
+  transition:background .1s,color .1s,border-color .1s;
+  padding-bottom:3px;/* ─ 글자 세로 정렬 보정 */
+}
+.w-min:hover{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.55);}
+/* 최소화 상태 */
+.widget.minimized .w-body{display:none!important;}
+.widget.minimized .w-resize{display:none!important;}
+.widget.minimized{height:28px!important;overflow:visible;}
+.widget.minimized .w-hdr{border-bottom:none;}
+/* 위젯 바디 */
+.w-body{
+  padding:10px;
+  overflow:hidden;
+  height:calc(100% - 28px);
+  display:flex;flex-direction:column;
+  box-sizing:border-box;
+}
+
+/* ── 행복도 위젯 ── */
+#w-hap .w-body{justify-content:center;gap:8px;}
+#w-hap-val{font-size:44px;font-weight:bold;letter-spacing:2px;line-height:1;flex-shrink:0;font-family:'VT323',monospace!important;}
+#w-hap-lbl{font-size:9px;color:#666;letter-spacing:2px;flex-shrink:0;font-family:'Courier New',Courier,monospace!important;}
+#w-hap-bar{width:100%;height:4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);flex-shrink:0;}
+#w-hap-fill{height:100%;background:#fff;transition:width .6s;}
+
+/* ── 현황 위젯 ── */
+#w-status .w-body{gap:6px;overflow:hidden;}
+.ws-row{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.05);}
+.ws-row:last-child{border-bottom:none;padding-bottom:0;}
+.ws-lbl{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;font-family:'Courier New',Courier,monospace!important;}
+.ws-val{font-size:15px;font-weight:bold;color:#fff;font-family:'Courier New',Courier,monospace!important;}
+.ws-val.alert{animation:blink .8s step-end infinite;}
+.ws-val.ok{color:#444;}
+
+/* ── 평면도 위젯 ── */
+#w-map .w-body{gap:4px;overflow:hidden;padding:8px;}
+.hb-floor{display:flex;align-items:center;gap:5px;padding:2px 0;}
+.hb-floor-n{font-size:9px;color:#555;width:18px;flex-shrink:0;text-align:center;font-family:'Courier New',Courier,monospace!important;}
+.hb-unit{
+  font-size:10px;font-weight:bold;
+  border:1px solid rgba(255,255,255,.18);padding:4px 8px;
+  cursor:pointer;transition:background .1s,color .1s;
+  color:#777;background:transparent;
+  font-family:'Courier New',Courier,monospace!important;
+}
+.hb-unit:hover{background:#fff;color:#000;border-color:#fff;}
+.hb-unit.unk{color:#2a2a2a;border-color:rgba(255,255,255,.05);cursor:default;}
+.hb-unit.guard{font-size:8px;color:#333;padding:3px 5px;border-style:dashed;border-color:#2a2a2a;}
+
+/* ── 활동 로그 위젯 ── */
+#w-log .w-body{overflow-y:auto;gap:4px;}
+#w-log .w-body::-webkit-scrollbar{width:2px;background:transparent;}
+#home-log-list{display:flex;flex-direction:column;gap:5px;width:100%;}
+.hl-item{font-size:11px;color:#666;line-height:1.5;display:flex;gap:6px;font-family:'Courier New',Courier,monospace!important;}
+.hl-time{color:#333;flex-shrink:0;font-size:10px;}
+.hl-txt{color:#666;}
+.hl-txt.new{color:#bbb;}
+
+/* ── DAY 위젯 ── */
+#w-day .w-body{justify-content:center;gap:4px;}
+#w-day-num{font-size:52px;font-weight:bold;letter-spacing:4px;line-height:1;flex-shrink:0;font-family:'VT323',monospace!important;}
+#w-day-sub{font-size:9px;color:#333;letter-spacing:3px;flex-shrink:0;font-family:'Courier New',Courier,monospace!important;}
+
+/* ── 시스템 메시지 위젯 ── */
+#w-sys .w-body{justify-content:center;align-items:center;}
+#home-sub{font-size:11px;color:#666;letter-spacing:1px;text-align:center;line-height:1.8;font-style:italic;}
+
+/* ── 드래그 선택 박스 ── */
+#w-select-box{
+  position:absolute;
+  border:1px solid rgba(255,255,255,.65);
+  background:rgba(255,255,255,.05);
+  pointer-events:none;
+  z-index:9000;
+  display:none;
+  box-sizing:border-box;
+}
+/* 선택된 위젯 */
+.widget.w-selected{
+  border-color:rgba(255,255,255,.75)!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 12px rgba(255,255,255,.08);
+}
+
+/* 호환 유지 — 다른 패널용 */
+.hs-row{display:flex;flex-direction:column;gap:3px;padding:8px 0;border-bottom:1px solid #1a1a1a;}
+.hs-row:last-child{border-bottom:none;}
+.hs-lbl{font-size:8px;color:#555;letter-spacing:1px;text-transform:uppercase;}
+.hs-val{font-size:16px;font-weight:bold;color:#fff;}
+.hs-val.alert{color:#fff;animation:blink .8s step-end infinite;}
+.hs-val.ok{color:#888;}
+.hs-minbar{width:100%;height:4px;background:#1a1a1a;border:1px solid #333;margin-top:3px;}
+.hs-minbar-fill{height:100%;background:repeating-linear-gradient(90deg,#fff 0,#fff 2px,transparent 2px,transparent 4px);transition:width .4s;}
+#home-sysmsg{padding:8px 10px;margin-top:auto;border:1px solid #1e1e1e;font-size:10px;color:#333;line-height:1.7;font-style:italic;}
+
+/* 주민 프로필 *//* 주민 프로필 */
+#pc-prof{width:220px;border-right:2px solid #333;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;position:relative;}
+#pc-prof-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#pc-prof>*{position:relative;z-index:1;}
+#av{width:100%;aspect-ratio:1;border-bottom:2px solid #333;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+#av::before{content:'';position:absolute;inset:0;background-color:#000;background-image:radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px),radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px);background-size:5px 5px;background-position:0 0,2.5px 2.5px;}
+#av::after{content:'';position:absolute;bottom:0;left:0;right:0;height:6px;background:repeating-conic-gradient(#fff 0% 25%,#000 0% 50%);background-size:8px 8px;}
+#av .avt{position:relative;z-index:1;font-size:10px;color:#1a1a1a;text-align:center;line-height:2.2;font-weight:bold;}
+#pinf{padding:10px;display:flex;flex-direction:column;gap:6px;background:rgba(0,0,0,.5);}
+.pr{display:flex;justify-content:space-between;font-size:11px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.08);}
+.pk{color:#555;}.pv{color:#fff;font-weight:bold;text-align:right;}
+.ft{width:100%;height:5px;border:1px solid #333;background:#000;margin-top:2px;}
+.ff{height:100%;background:repeating-linear-gradient(90deg,#fff 0,#fff 2px,transparent 2px,transparent 4px);transition:width .4s;}
+.visibtn{margin:8px;font-family:'Courier New',Courier,monospace;font-size:11px;background:#000;color:#fff;border:2px solid #fff;padding:8px;cursor:pointer;text-align:center;letter-spacing:1px;font-weight:bold;transition:background .1s,color .1s;}
+.visibtn:hover{background:#fff;color:#000;}
+
+/* 채팅 패널 */
+#pc-chat{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+#pc-chat-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#pc-chat>*{position:relative;z-index:1;}
+
+#chat-hdr{
+  padding:7px 12px;border-bottom:2px solid #fff;
+  font-size:11px;font-weight:bold;
+  background:#fff;color:#000;
+  flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  letter-spacing:1px;text-transform:uppercase;
+}
+#chat-hdr button{
+  font-family:'Courier New',Courier,monospace;font-size:10px;
+  background:#fff;border:1px solid #999;color:#555;
+  padding:2px 8px;cursor:pointer;
+  border-top:1px solid #bbb;border-left:1px solid #bbb;
+  border-bottom:1px solid #333;border-right:1px solid #333;
+}
+#chat-hdr button:hover{background:#000;color:#fff;border-color:#fff;}
+
+#chatbox{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;}
+#chatbox::-webkit-scrollbar{width:3px;background:transparent;}
+#chatbox::-webkit-scrollbar-thumb{background:#222;}
+
+/* 일반 말풍선 */
+.cm{max-width:80%;display:flex;flex-direction:column;gap:2px;}
+.cm.r{align-self:flex-start;}
+.cm.s{align-self:flex-end;text-align:right;}
+.csdr{font-size:9px;color:#444;margin-bottom:1px;}
+.cbbl{font-size:12px;line-height:1.8;border:1px solid;padding:5px 10px;display:inline-block;}
+.cm.r .cbbl{border-color:#333;background:rgba(255,255,255,.05);color:#ccc;}
+.cm.s .cbbl{border-color:#fff;background:#fff;color:#000;font-weight:bold;}
+
+/* 민원 말풍선 — 특수 박스 */
+.cm-complaint{
+  align-self:flex-start;
+  max-width:88%;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.04);
+  padding:8px 12px 10px;
+  position:relative;
+  margin:4px 0;
+}
+.cm-complaint-tag{
+  font-size:8px;letter-spacing:2px;color:#888;
+  border:1px solid #333;padding:1px 6px;
+  display:inline-block;margin-bottom:6px;
+  font-weight:bold;text-transform:uppercase;
+}
+.cm-complaint-from{font-size:9px;color:#555;margin-bottom:4px;}
+.cm-complaint-line{font-size:12px;color:#ccc;line-height:1.9;}
+
+/* 시스템 메시지 */
+.cm-sys{
+  font-size:10px;color:#444;text-align:center;
+  padding:4px;font-style:italic;letter-spacing:.5px;
+  align-self:center;
+}
+.cm-day-divider{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 0;align-self:stretch;
+}
+.cm-day-divider::before,.cm-day-divider::after{
+  content:'';flex:1;height:1px;background:rgba(255,255,255,.15);
+}
+.cm-day-divider span{
+  font-size:9px;color:#444;letter-spacing:3px;
+  white-space:nowrap;font-family:'Courier New',Courier,monospace;
+}
+/* 채팅 하단 — 선택지 + 입력칸 묶음 */
+#chat-bottom{flex-shrink:0;border-top:1px solid #1e1e1e;}
+/* 선택지 */
+#chat-choices{display:flex;flex-direction:column;gap:3px;padding:6px 10px 0;}
+#chat-choices:empty{display:none;padding:0;}
+.choice-btn{
+  font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:bold;
+  background:rgba(255,255,255,.06);color:#ccc;
+  border:1px solid #444;border-left:3px solid #888;
+  padding:6px 12px;cursor:pointer;text-align:left;letter-spacing:.5px;
+  transition:all .08s;
+}
+.choice-btn::before{content:'▶ ';font-size:9px;opacity:.5;}
+.choice-btn:hover{background:rgba(255,255,255,.12);color:#fff;border-color:#888;border-left-color:#fff;}
+.choice-btn:active{background:rgba(255,255,255,.18);}
+.choice-btn:disabled{opacity:.25;pointer-events:none;}
+
+/* 채팅 입력 */
+#chat-ir{display:flex;border-top:1px solid #1a1a1a;margin-top:6px;}
+#chin{flex:1;background:transparent;border:none;color:#fff;font-family:'Courier New',Courier,monospace;font-size:12px;padding:9px 12px;outline:none;caret-color:#fff;}
+#chin::placeholder{color:#2a2a2a;}
+#chgo{background:#000;border:none;border-left:1px solid #333;color:#555;font-family:'Courier New',Courier,monospace;font-size:11px;padding:0 14px;cursor:pointer;font-weight:bold;letter-spacing:1px;}
+#chgo:hover{color:#fff;}
+
+/* 민원함 */
+#pn-complaints.on{flex-direction:row;}
+#clist{width:260px;border-right:2px solid #333;overflow-y:auto;flex-shrink:0;position:relative;}
+#clist-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#clist>*{position:relative;z-index:1;}
+#clist::-webkit-scrollbar{width:3px;}
+#clist-hdr{background:#fff;color:#000;padding:8px 10px;font-size:10px;font-weight:bold;letter-spacing:2px;border-bottom:2px solid #000;text-transform:uppercase;}
+.ci{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .1s;}
+.ci:hover{background:rgba(255,255,255,.05);}
+.ci.act{background:#fff;}
+.cifrom{font-size:9px;color:#555;margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.ci.act .cifrom{color:#888;}
+.ciudot{width:6px;height:6px;background:#ff3b30;border-radius:50%;display:inline-block;animation:blink .6s step-end infinite;flex-shrink:0;box-shadow:0 0 6px rgba(255,59,48,.8);}
+.ci.act .ciudot{background:#0f5;box-shadow:0 0 6px rgba(0,255,90,.7);}
+.cisubj{font-size:12px;color:#fff;line-height:1.4;margin-bottom:3px;font-weight:bold;}
+.ci.act .cisubj{color:#000;}
+.citime{font-size:9px;color:#444;}
+.ci.act .citime{color:#888;}
+#cdet{flex:1;overflow-y:auto;display:flex;flex-direction:column;position:relative;}
+#cdet-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#cdet>*{position:relative;z-index:1;}
+#cdet::-webkit-scrollbar{width:3px;}
+#cemp{color:#2a2a2a;font-size:12px;margin:auto;text-align:center;padding:20px;}
+.cd-wrap{padding:18px;display:flex;flex-direction:column;gap:12px;height:100%;}
+.cdh{border-bottom:1px solid #222;padding-bottom:10px;}
+.cdfrom{font-size:9px;color:#555;margin-bottom:6px;}
+.cdsubj{font-size:15px;color:#fff;line-height:1.5;font-weight:bold;}
+.cdbody{font-size:12px;color:#888;line-height:2.1;flex:1;}
+.repbtn{font-family:'Courier New',Courier,monospace;font-size:11px;background:#000;color:#fff;border:2px solid #fff;padding:8px 16px;cursor:pointer;letter-spacing:1px;font-weight:bold;align-self:flex-start;transition:background .1s,color .1s;}
+.repbtn:hover{background:#fff;color:#000;}
+
+/* 게시판 */
+#pn-board.on{overflow-y:auto;position:relative;}
+#board-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#pn-board>*{position:relative;z-index:1;}
+#pn-board.on::-webkit-scrollbar{width:3px;}
+#board-hdr{background:#fff;color:#000;padding:8px 14px;font-size:10px;font-weight:bold;letter-spacing:2px;border-bottom:2px solid #000;flex-shrink:0;text-transform:uppercase;}
+#board-list{padding:12px;display:flex;flex-direction:column;gap:8px;}
+/* 게시판 포스트 — rough 코너 */
+.bp{border:1px solid rgba(255,255,255,.5);padding:12px 14px;cursor:pointer;position:relative;overflow:hidden;background-color:#000;background-image:radial-gradient(circle,rgba(255,255,255,.08) .8px,transparent .8px);background-size:6px 6px;transition:border-color .1s;}
+.bp::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle,rgba(255,255,255,.4) 1.5px,transparent 1.5px) 4px 4px/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.2) 1px,transparent 1px) 7px 4px/2px 2px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.4) 1.5px,transparent 1.5px) calc(100% - 4px) 4px/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.4) 1.5px,transparent 1.5px) 4px calc(100% - 4px)/3px 3px no-repeat,
+    radial-gradient(circle,rgba(255,255,255,.4) 1.5px,transparent 1.5px) calc(100% - 4px) calc(100% - 4px)/3px 3px no-repeat;
+}
+.bp:hover{border-color:#fff;}
+.bp.pin{border-color:#fff;border-width:2px;}
+.bpm{display:flex;justify-content:space-between;font-size:9px;color:#555;margin-bottom:5px;}
+.bp.pin .bpm{color:#888;}
+.bptag{border:1px solid #fff;color:#fff;font-size:9px;padding:1px 5px;margin-right:5px;font-weight:bold;}
+.bptitle{font-size:13px;color:#fff;line-height:1.6;margin-bottom:4px;font-weight:bold;}
+.bpprev{font-size:10px;color:#555;line-height:1.8;}
+
+/* ══ CCTV — 포스포 그린 CRT ══ */
+#pn-cctv{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px;background:#050a05;}
+.cf{border-top:1px solid #1a2a1a;border-left:1px solid #1a2a1a;border-bottom:1px solid #050e05;border-right:1px solid #050e05;background:#001200;position:relative;overflow:hidden;cursor:pointer;transition:border-color .12s;}
+.cf:hover{border-top-color:#2a3a2a;border-left-color:#2a3a2a;}
+/* 코너 픽셀 — 녹색 */
+.cf::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:8;background:
+  radial-gradient(circle,rgba(0,200,60,.4) 1.5px,transparent 1.5px) 5px 5px/3px 3px no-repeat,
+  radial-gradient(circle,rgba(0,200,60,.2) 1px,transparent 1px) 9px 5px/2px 2px no-repeat,
+  radial-gradient(circle,rgba(0,200,60,.4) 1.5px,transparent 1.5px) calc(100% - 5px) 5px/3px 3px no-repeat,
+  radial-gradient(circle,rgba(0,200,60,.4) 1.5px,transparent 1.5px) 5px calc(100% - 5px)/3px 3px no-repeat,
+  radial-gradient(circle,rgba(0,200,60,.4) 1.5px,transparent 1.5px) calc(100% - 5px) calc(100% - 5px)/3px 3px no-repeat;}
+/* 배경 이미지 (배경/CCTV/이름.png) */
+.cf-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:sepia(1) saturate(2.2) hue-rotate(82deg) brightness(0.72) contrast(1.35);}
+/* 그린 스크린 필터: PNG 위에 덮는 반투명 레이어 */
+.cfsc{position:absolute;inset:0;z-index:1;pointer-events:none;background-color:rgba(0,20,0,.18);background-image:radial-gradient(circle,rgba(0,255,70,.18) 1px,transparent 1px),radial-gradient(circle,rgba(0,120,40,.14) 1px,transparent 1px);background-size:4px 4px;background-position:0 0,2px 2px;mix-blend-mode:screen;}
+/* 포스포 오버레이 */
+.cf-phosphor{position:absolute;inset:0;z-index:2;pointer-events:none;background:rgba(0,28,0,0.38);}
+/* 노이즈 */
+.cfn{position:absolute;inset:0;z-index:3;mix-blend-mode:screen;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");background-size:120px 120px;animation:sn .07s steps(1) infinite;}
+@keyframes sn{0%{background-position:0 0}25%{background-position:-15px 12px}50%{background-position:10px -8px}75%{background-position:-5px 18px}}
+/* CRT 스캔라인 */
+.cfscan{position:absolute;inset:0;z-index:4;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.22) 2px,rgba(0,0,0,0.22) 3px);}
+/* 롤링 밴드 */
+.cfband{
+  position:absolute;left:0;right:0;height:2px;z-index:5;pointer-events:none;
+  background:rgba(0,255,80,.6);
+  box-shadow:0 0 4px rgba(0,255,80,.4),0 0 1px #fff;
+  animation:band 5s linear infinite;
+}
+@keyframes band{from{top:-2px}to{top:calc(100% + 2px)}}
+/* 불규칙 지직 글리치 */
+.cf-glitch{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;}
+.cf:nth-child(1) .cf-glitch{animation:glitch1 7s steps(1) infinite;}
+.cf:nth-child(2) .cf-glitch{animation:glitch1 9s steps(1) infinite 3s;}
+.cf:nth-child(3) .cf-glitch{animation:glitch1 11s steps(1) infinite 1.5s;}
+.cf:nth-child(4) .cf-glitch{animation:glitch1 8s steps(1) infinite 5s;}
+@keyframes glitch1{
+  0%,88%,100%{opacity:0;transform:none;background:transparent;}
+  89%{opacity:1;transform:translateX(-2px);
+    background:linear-gradient(180deg,transparent 22%,rgba(0,240,60,.2) 22%,rgba(0,240,60,.2) 25%,transparent 25%);}
+  90%{opacity:1;transform:translateX(2px);
+    background:linear-gradient(180deg,transparent 55%,rgba(0,240,60,.15) 55%,rgba(0,240,60,.15) 58%,transparent 58%);}
+  91%{opacity:0;transform:none;background:transparent;}
+  95%{opacity:1;transform:translateX(-1px);
+    background:linear-gradient(180deg,
+      transparent 10%,rgba(0,240,60,.12) 10%,rgba(0,240,60,.12) 12%,transparent 12%,
+      transparent 70%,rgba(0,240,60,.16) 70%,rgba(0,240,60,.16) 73%,transparent 73%);}
+  96%{opacity:0;transform:none;background:transparent;}
+}
+/* 라벨: 포스포 그린 */
+.cflbl{position:absolute;top:8px;left:10px;z-index:7;font-size:10px;letter-spacing:1px;font-weight:bold;color:#00cc44;text-shadow:0 0 6px rgba(0,180,50,.7);}
+/* REC: 빨간색 */
+.cfrec{position:absolute;top:8px;right:10px;z-index:7;display:flex;align-items:center;gap:4px;font-size:9px;color:#ff3300;font-weight:bold;}
+.cfrec::before{content:'';width:6px;height:6px;background:#ff2200;border-radius:50%;animation:blink .9s step-end infinite;box-shadow:0 0 5px rgba(255,30,0,.7);}
+/* 타임스탬프 */
+.cftime{position:absolute;bottom:7px;right:10px;z-index:7;font-size:9px;color:#009933;letter-spacing:1px;}
+/* 전체화면 */
+#ccbig{display:none;position:absolute;inset:0;background:#001200;z-index:500;flex-direction:column;}
+#ccbig.on{display:flex;}
+#ccbighdr{display:flex;justify-content:space-between;align-items:center;padding:0 14px;height:36px;border-bottom:2px solid #00cc44;flex-shrink:0;background:#001a00;}
+#ccbighdr span{font-size:11px;color:#00cc44;font-weight:bold;letter-spacing:1px;text-shadow:0 0 5px rgba(0,180,50,.5);}
+#ccx{font-family:'Courier New',Courier,monospace;font-size:11px;background:#001a00;border:1px solid #00cc44;color:#00cc44;padding:4px 12px;cursor:pointer;font-weight:bold;}
+#ccx:hover{background:#003300;color:#00ff55;}
+#ccbigf{flex:1;position:relative;overflow:hidden;background:#001200;}
+#ccbig-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:sepia(1) saturate(2.2) hue-rotate(82deg) brightness(0.72) contrast(1.35);}
+
+/* 관리일지 */
+#pn-log.on{flex-direction:column;position:relative;}
+#log-bg{position:absolute;inset:0;z-index:0;pointer-events:none;}
+#pn-log>*{position:relative;z-index:1;}
+#log-hdr{background:#fff;color:#000;padding:8px 14px;font-size:10px;font-weight:bold;letter-spacing:2px;border-bottom:2px solid #000;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;text-transform:uppercase;}
+#logta{flex:1;width:100%;background:transparent;color:#ddd;font-family:'Courier New',Courier,monospace;font-size:13px;border:none;padding:12px 14px;resize:none;outline:none;line-height:30px;caret-color:#fff;}
+#logta,#chin{user-select:text;-webkit-user-select:text;}
+#logta::placeholder{color:#1e1e1e;}
+
+/* BOTTOM LOG */
+#blog{
+  position:absolute;bottom:0;left:0;right:0;height:34px;
+  /* 3D 베벨 상단선 */
+  border-top:none;
+  box-shadow:0 -1px 0 #aaa, 0 -2px 0 #333, 0 -3px 0 #888, 0 -4px 0 #111;
+  display:flex;align-items:center;
+  padding:0 14px;z-index:200;overflow:hidden;
+  background:#000;gap:10px;
+}
+#blog::before{
+  content:'SYS:';
+  font-size:9px;color:#555;
+  letter-spacing:3px;flex-shrink:0;
+}
+#blogtxt{font-size:10px;color:#777;white-space:nowrap;overflow:hidden;}
+.lt2{color:#ccc;}
+#bcur{display:inline-block;width:6px;height:10px;background:#555;margin-left:4px;vertical-align:middle;animation:blink .7s step-end infinite;}
+
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .5s;z-index:9000;}
+#fade.in{opacity:1;pointer-events:all;}
+#fademsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#333;letter-spacing:3px;}
+/* DAY 전환 화면 */
+#day-transition{
+  position:fixed;inset:0;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  z-index:9500;opacity:0;pointer-events:none;
+  transition:opacity .6s;
+}
+#day-transition.in{opacity:1;pointer-events:all;}
+#day-transition-text{
+  font-family:'Courier New',Courier,monospace;
+  font-size:14px;color:#fff;letter-spacing:6px;
+  text-align:center;line-height:2;
+  opacity:0;transition:opacity .4s;
+}
+#day-transition.in #day-transition-text{opacity:1;}
+
+/* ══ 개미 이스터에그 ══ */
+#ant-el{
+  position:fixed;
+  width:40px;height:40px;
+  z-index:19999;
+  cursor:pointer;
+  pointer-events:all;
+  transform-origin:center center;
+  transition:filter .1s;
+}
+#ant-el img{
+  width:100%;height:100%;
+  object-fit:contain;
+  display:block;
+  image-rendering:pixelated;
+}
+#ant-el.dead{
+  cursor:context-menu;
+  filter:brightness(.6) sepia(.5);
+}
+#ant-el.hit{filter:brightness(3) invert(1);}
+/* 우클릭 메뉴 */
+#ant-ctx{
+  position:fixed;
+  background:rgba(0,0,0,.92);
+  border:1px solid rgba(255,255,255,.3);
+  font-family:'Courier New',Courier,monospace;
+  font-size:11px;
+  z-index:20000;
+  display:none;
+  min-width:110px;
+  overflow:hidden;
+}
+#ant-ctx.on{display:block;}
+.ant-ctx-item{
+  padding:7px 14px;color:#ccc;cursor:pointer;letter-spacing:1px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.ant-ctx-item:last-child{border-bottom:none;}
+.ant-ctx-item:hover{background:rgba(255,255,255,.12);color:#fff;}
+/* 토스트 */
+#ant-toast{
+  position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.9);border:1px solid rgba(255,255,255,.3);
+  color:#fff;font-family:'Courier New',Courier,monospace;font-size:11px;
+  padding:8px 18px;letter-spacing:1px;
+  z-index:20001;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+#ant-toast.show{opacity:1;}
+#face-screen{
+  position:fixed;inset:0;
+  display:none;
+  flex-direction:row;
+  background:#000;
+  z-index:8000;
+}
+#face-screen.on{display:flex;}
+#face-screen::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);pointer-events:none;z-index:9999;}
+
+/* 좌측 — 씬 + 대화창 */
+#face-left{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+
+/* 씬 영역 — 고정 높이로 배경 보이되 대화창 충분히 확보 */
+#face-scene{
+  flex:0 0 75%;
+  position:relative;overflow:hidden;
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.22) .9px,transparent .9px),
+    radial-gradient(circle,rgba(255,255,255,.22) .9px,transparent .9px);
+  background-size:7px 7px;background-position:0 0,3.5px 3.5px;
+}
+
+/* 배경 PNG 자리 */
+#face-bg{
+  position:absolute;inset:0;
+  /* 실제 게임에선 background-image:url(bg.png) */
+}
+
+/* 캐릭터 PNG 레이어 (PNG 위에 쌓임) */
+#face-sprites{
+  position:absolute;inset:0;
+  display:flex;align-items:flex-end;justify-content:center;
+  gap:0;
+}
+.face-sprite{
+  position:relative;
+  height:90%;width:auto;
+  display:flex;align-items:flex-end;
+  transition:filter .3s, opacity .3s;
+}
+.face-sprite.dim{filter:brightness(.35);opacity:.8;}
+.face-sprite .sp-img{
+  /* 캐릭터 PNG 플레이스홀더 */
+  width:300px;height:100%;
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.55) 1.5px,transparent 1.5px),
+    radial-gradient(circle,rgba(255,255,255,.55) 1.5px,transparent 1.5px);
+  background-size:5px 5px;background-position:0 0,2.5px 2.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.face-sprite .sp-img span{font-size:11px;color:#2a2a2a;letter-spacing:1px;}
+/* 씬 내부 스크린톤 변화 — 오른쪽 가장자리 더 어둡게 */
+#face-scene::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 60%,rgba(0,0,0,.4));
+  pointer-events:none;z-index:5;
+}
+
+/* 대화창 래퍼 */
+#face-dbox-wrap{
+  flex:0 0 25%;
+  min-height:0;
+  padding:16px 16px 12px;
+  position:relative;
+  border-top:2px solid #fff;
+  background-color:#000;
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 1px,transparent 0,transparent 40px);
+}
+
+/* 대화창 박스 */
+#face-dbox{
+  border:2px solid #fff;
+  height:100%;
+  padding:10px 14px 8px;
+  position:relative;
+  display:flex;flex-direction:column;gap:8px;
+}
+
+/* 이름 태그 — 대화창 테두리 위에 걸침 */
+#face-dname{
+  position:absolute;
+  top:-16px;left:12px;
+  background:#000;border:2px solid #fff;
+  padding:2px 12px;
+  font-size:11px;color:#fff;font-weight:bold;letter-spacing:1px;
+  white-space:nowrap;
+}
+
+#face-dtext{
+  font-size:13px;color:#ddd;line-height:1.9;
+  flex:1;overflow-y:auto;cursor:pointer;
+}
+#face-dtext::-webkit-scrollbar{width:2px;}
+
+/* 대면 화면 선택지 */
+#face-choices{
+  display:flex;flex-direction:column;gap:5px;flex-shrink:0;
+}
+.face-choice{
+  font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:bold;
+  background:#666;color:#000;
+  border-top:2px solid #999;border-left:2px solid #999;
+  border-bottom:2px solid #222;border-right:2px solid #222;
+  box-shadow:2px 2px 0 #000;
+  padding:8px 14px;cursor:pointer;letter-spacing:.5px;
+  text-align:left;width:100%;
+  display:flex;align-items:center;gap:6px;
+  transition:all .08s;
+}
+.face-choice::before{content:'▶';font-size:10px;color:#222;flex-shrink:0;}
+.face-choice:hover{background:#888;transform:translate(-1px,-1px);box-shadow:3px 3px 0 #000;}
+.face-choice:active{transform:translate(2px,2px);box-shadow:none;background:#555;}
+
+/* 클릭해서 진행 힌트 */
+#face-advance{
+  font-size:10px;color:#444;text-align:right;flex-shrink:0;letter-spacing:1px;
+  animation:blink 1s step-end infinite;
+}
+
+/* 우측 패널 */
+#face-right{
+  width:220px;
+  border-left:2px solid #fff;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.5) 1.3px,transparent 1.3px),
+    radial-gradient(circle,rgba(255,255,255,.5) 1.3px,transparent 1.3px);
+  background-size:6px 6px;background-position:0 0,3px 3px;
+}
+
+/* 상단 날짜/시간 */
+#face-topinfo{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 10px;border-bottom:2px solid #fff;flex-shrink:0;
+  background:#000;
+}
+.face-daybadge{border:2px solid #fff;color:#fff;padding:2px 8px;font-size:9px;letter-spacing:2px;font-weight:bold;}
+#face-clk{border:2px solid #555;color:#aaa;padding:2px 6px;font-size:9px;letter-spacing:1px;}
+
+/* 캐릭터 정보 */
+#face-charcard{
+  flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;
+  background:rgba(0,0,0,.4);
+}
+#face-charcard::-webkit-scrollbar{width:3px;}
+.fc-lbl{font-size:9px;color:#555;letter-spacing:1px;margin-bottom:2px;}
+.fc-val{font-size:13px;color:#fff;font-weight:bold;}
+.fc-row{border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:7px;}
+.fc-favtrack{width:100%;height:5px;border:1px solid #333;background:#000;margin-top:4px;}
+.fc-favfill{height:100%;background:repeating-linear-gradient(90deg,#fff 0,#fff 2px,transparent 2px,transparent 4px);transition:width .4s;}
+.fc-divider{height:1px;background:rgba(255,255,255,.15);margin:4px 0;}
+
+/* WoH 스타일 장소 표시 박스 */
+#face-loc-box{
+  position:absolute;
+  top:12px;left:12px;
+  z-index:10;
+  background:#000;
+  border:2px solid #fff;
+  padding:4px 12px 4px 8px;
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:#fff;font-weight:bold;letter-spacing:1px;
+  text-transform:uppercase;
+  /* rough corner */
+  box-shadow:3px 3px 0 rgba(0,0,0,.8);
+}
+#face-loc-box::before{
+  content:'▣';font-size:8px;color:#aaa;flex-shrink:0;
+}
+#face-back{
+  flex-shrink:0;
+  font-family:'Courier New',Courier,monospace;font-size:9px;font-weight:bold;
+  background:#000;color:#666;
+  border:none;border-top:2px solid #fff;border-bottom:none;
+  padding:10px;cursor:pointer;letter-spacing:2px;
+  text-transform:uppercase;
+  transition:color .1s,background .1s;
+}
+#face-back:hover{background:#fff;color:#000;}
+
+/* 우측 중단 NPC 얼굴 영역 (신규) */
+#face-npcbox{
+  flex-shrink:0;
+  width:100%;aspect-ratio:1;
+  border-top:2px solid #fff;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background-color:#000;
+}
+#face-npcbox::before{
+  content:'[ RESIDENT ]';
+  font-size:9px;color:#333;letter-spacing:1px;font-weight:bold;position:relative;z-index:1;
+}
+
+/* 우측 하단 플레이어 얼굴 */
+#face-playerbox{
+  flex-shrink:0;
+  width:100%;aspect-ratio:1;
+  border-top:2px solid #fff;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background-color:#000;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px),
+    radial-gradient(circle,rgba(255,255,255,.65) 1.8px,transparent 1.8px);
+  background-size:5px 5px;background-position:0 0,2.5px 2.5px;
+}
+#face-playerbox::before{content:'[ PLAYER ]';font-size:9px;color:#111;letter-spacing:1px;font-weight:bold;position:relative;z-index:1;}
+#face-playerbox::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:repeating-conic-gradient(#fff 0% 25%,#000 0% 50%);background-size:8px 8px;}
+</style>
+</head>
+<body>
+
+<!-- ══ 오프닝 화면 ══ -->
+<div id="opening">
+  <div id="op-bg"></div>
+  <div id="op-dbox-wrap">
+    <div id="op-dbox">
+      <div id="op-text"></div>
+      <div id="op-advance">▼ CLICK</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SITE SCREEN ══ -->
+<div id="G">
+<div id="G-inner" class="st-5">
+  <div id="topbar">
+    <div id="tb-l">
+      <span class="tb-sys">[ VILLA-SYS ]</span>
+      <span class="tb-title">행복빌라 경비 관리 시스템</span>
+      <span class="tb-online"><span class="blink">●</span>&nbsp;ONLINE</span>
+    </div>
+    <div id="tb-r">
+      <div id="day-btn-wrap">
+        <button id="day-btn" onclick="dayBtnClick()">루트 선택 <span id="day-ending-label">—</span></button>
+        <button id="day-go-btn" onclick="advanceDay()" style="display:none">→</button>
+        <div id="ending-menu">
+          <div class="em-label">[ DEV ] 엔딩 루트</div>
+          <button class="em-btn" data-route="END_1" onclick="selectEndingRoute('END_1')">E1 빌라유지</button>
+          <button class="em-btn" data-route="END_2_A" onclick="selectEndingRoute('END_2_A')">E2A 불씨</button>
+          <button class="em-btn" data-route="END_2_B" onclick="selectEndingRoute('END_2_B')">E2B 실종</button>
+          <button class="em-btn" data-route="END_2_C" onclick="selectEndingRoute('END_2_C')">E2C 201호</button>
+          <button class="em-btn" data-route="END_3" onclick="selectEndingRoute('END_3')">E3 진실</button>
+          <button class="em-btn" data-route="" onclick="selectEndingRoute(null)">— 자유</button>
+        </div>
+      </div>
+      <span class="daybadge" id="daydisp">DAY 1</span>
+      <span id="clk">--:--:--</span>
+    </div>
+  </div>
+
+  <div id="layout">
+    <!-- SIDEBAR — 통합 스크린톤 (경계 없음) -->
+    <div id="sb" class="st-30">
+      <div id="hapbox-hdr" class="st-diag">▣ 빌라 행복도</div>
+      <div id="hapbox-body">
+        <div id="hap-track"><div id="hap-fill" style="width:16%"></div></div>
+        <div id="hap-pct">16%</div>
+      </div>
+      <div id="reslbl" class="st-diag">▣ 주민 목록</div>
+      <div id="reslist">
+        <button class="rb" onclick="selRes('301')"><span class="rfloor">3F</span><span class="rn">301호</span><span class="rm">??? / ??세</span><div class="rbar"><div class="rbf" style="width:20%"></div></div></button>
+        <button class="rb" onclick="selRes('202')"><span class="rfloor">2F</span><span class="rn">202호</span><span class="rm">??? / ??세</span><div class="rbar"><div class="rbf" style="width:40%"></div></div></button>
+        <button class="rb" onclick="selRes('201')"><span class="rfloor">2F</span><span class="rn">201호</span><span class="rm">??? / ??세</span><div class="rbar"><div class="rbf" style="width:0%"></div></div></button>
+        <button class="rb" onclick="selRes('102')"><span class="rfloor">1F</span><span class="rn">102호</span><span class="rm">??? / ??세</span><div class="rbar"><div class="rbf" style="width:20%"></div></div></button>
+        <button class="rb" onclick="selRes('101')"><span class="rfloor">1F</span><span class="rn">101호</span><span class="rm">??? / ??세</span><div class="rbar"><div class="rbf" style="width:0%"></div></div></button>
+      </div>
+      <!-- 플레이어 얼굴 — 경계 없이 동일 스크린톤 이어짐 -->
+      <div id="player-face" class="st-45">
+        <img src="캐릭터/player.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;" onerror="this.style.display='none'">
+        <div class="pf-checker"></div>
+      </div>
+    </div>
+
+    <div id="main">
+      <div id="tabbar">
+        <div id="tabbar-bg" class="st-diag" style="position:absolute;inset:0;z-index:0;"></div>
+        <button class="tb" onclick="sw('complaints')">민원함<span class="tndot" id="tnd-c"></span></button>
+        <button class="tb" onclick="sw('board')">게시판<span class="tndot" id="tnd-b" style="display:none"></span></button>
+        <button class="tb" onclick="sw('cctv')">CCTV</button>
+        <button class="tb" onclick="sw('log')">관리일지</button>
+        <button class="tb" onclick="sw('clues')">단서<span class="tndot" id="tnd-clue" style="display:none"></span></button>
+      </div>
+      <div id="parea">
+
+        <!-- ══ 홈 화면 — 위젯 시스템 ══ -->
+        <div class="pn on" id="pn-home">
+          <!-- 배경 이미지 레이어 (img 태그로 경로 오류 우회) -->
+          <img id="home-bg-img" src="배경/홈배경.png" alt=""
+            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"
+            onerror="this.style.display='none'">
+          <div id="widget-canvas">
+          <!-- 드래그 선택 박스 -->
+          <div id="w-select-box"></div>
+
+            <!-- 위젯: DAY -->
+            <div class="widget" id="w-day" style="left:20px;top:18px;width:130px;height:96px;z-index:10;">
+              <div class="w-hdr">DAY<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-day')">─</button></div></div>
+              <div class="w-body">
+                <div id="w-day-num">1</div>
+                <div id="w-day-sub">VILLA SYS</div>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 위젯: 행복도 -->
+            <div class="widget" id="w-hap" style="left:164px;top:18px;width:160px;height:96px;z-index:10;">
+              <div class="w-hdr">행복도<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-hap')">─</button></div></div>
+              <div class="w-body">
+                <div id="w-hap-val">16%</div>
+                <div id="w-hap-lbl">HAPPINESS INDEX</div>
+                <div id="w-hap-bar"><div id="w-hap-fill" style="width:16%"></div></div>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 위젯: 일일 현황 -->
+            <div class="widget" id="w-status" style="left:20px;top:128px;width:220px;height:170px;z-index:10;">
+              <div class="w-hdr">일일 현황<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-status')">─</button></div></div>
+              <div class="w-body">
+                <div class="ws-row"><span class="ws-lbl">미확인 민원</span><span class="ws-val alert" id="hs-complaints">2건</span></div>
+                <div class="ws-row"><span class="ws-lbl">빌라 행복도</span><span class="ws-val" id="hs-happiness">16%</span></div>
+                <div class="ws-row"><span class="ws-lbl">수집 단서</span><span class="ws-val ok" id="hs-clues">0개</span></div>
+                <div class="ws-row"><span class="ws-lbl">게시판 새 글</span><span class="ws-val ok" id="hs-board">1건</span></div>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 위젯: 빌라 평면도 -->
+            <div class="widget" id="w-map" style="left:254px;top:18px;width:160px;height:280px;z-index:10;">
+              <div class="w-hdr">평면도<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-map')">─</button></div></div>
+              <div class="w-body" style="padding:8px;">
+                <div class="hb-floor"><span class="hb-floor-n">3F</span><div class="hb-unit unk" onclick="selRes('301')">301</div></div>
+                <div class="hb-floor"><span class="hb-floor-n">2F</span><div class="hb-unit unk" onclick="selRes('202')">202</div><div class="hb-unit unk" onclick="selRes('201')">201</div></div>
+                <div class="hb-floor"><span class="hb-floor-n">1F</span><div class="hb-unit unk" onclick="selRes('102')">102</div><div class="hb-unit unk" onclick="selRes('101')">101</div></div>
+                <div class="hb-floor"><span class="hb-floor-n">B1</span><div class="hb-unit guard">경비실</div></div>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 위젯: 최근 활동 -->
+            <div class="widget" id="w-log" style="left:20px;top:312px;width:304px;height:150px;z-index:10;">
+              <div class="w-hdr">최근 활동<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-log')">─</button></div></div>
+              <div class="w-body">
+                <div id="home-log-list"></div>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 위젯: 시스템 메시지 -->
+            <div class="widget" id="w-sys" style="left:20px;top:476px;width:394px;height:50px;z-index:10;">
+              <div class="w-hdr">SYS<div class="w-hdr-btns"><button class="w-min" onclick="toggleMin(event,'w-sys')">─</button></div></div>
+              <div class="w-body" style="padding:6px 10px;justify-content:center;">
+                <span id="home-sub" style="font-size:11px;color:#666;letter-spacing:1px;font-style:italic;">시스템 온라인 — 이상 없음</span>
+              </div>
+              <div class="w-resize"></div>
+            </div>
+
+            <!-- 숨김 — JS updateHome 호환용 더미 -->
+            <div style="display:none">
+              <div id="hs-hapbar"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 주민 -->        <!-- 주민 -->
+        <div class="pn" id="pn-res">
+          <div id="pc-prof">
+            <div id="pc-prof-bg" class="st-30"></div>
+            <div id="av">
+              <!-- 캐릭터 직접 대면 후 이미지 표시: 캐릭터/101/c101_normal.png -->
+              <img id="av-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;display:none;" onerror="this.style.display='none'">
+              <span class="avt" id="av-txt">이미지 없음<br><br>직접 대면 필요</span>
+            </div>
+            <div id="pinf">
+              <div class="pr"><span class="pk">호수</span><span class="pv" id="pi-room">-</span></div>
+              <div class="pr"><span class="pk">이름</span><span class="pv" id="pi-name">-</span></div>
+              <div class="pr"><span class="pk">나이</span><span class="pv" id="pi-age">-</span></div>
+              <div class="pr"><span class="pk">호감도</span><span class="pv" id="pi-fav">-</span></div>
+              <div class="ft"><div class="ff" id="pi-fb" style="width:0%"></div></div>
+            </div>
+            <button class="visibtn" onclick="doVisit()">▶ 집으로 방문</button>
+          </div>
+          <div id="pc-chat">
+            <div id="pc-chat-bg" style="position:absolute;inset:0;z-index:0;background-color:#000;background-image:radial-gradient(circle,rgba(255,255,255,.12) .8px,transparent .8px);background-size:8px 8px;pointer-events:none;"></div>
+            <div id="chat-hdr"><span id="chat-ttl">■ 1:1 대화</span><button onclick="closeRes()">✕ 닫기</button></div>
+            <div id="chatbox"></div>
+            <!-- 선택지 + 입력칸 묶음 -->
+            <div id="chat-bottom">
+              <div id="chat-choices"></div>
+              <div id="chat-ir">
+                <input id="chin" type="text" placeholder="메시지 입력..." maxlength="60">
+                <button id="chgo" onclick="doSend()">전송</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 민원함 -->
+        <div class="pn" id="pn-complaints">
+          <div id="clist">
+            <div id="clist-bg" class="st-30"></div>
+            <div id="clist-hdr" class="st-diag">▣ 받은 민원</div>
+          </div>
+          <div id="cdet">
+            <div id="cdet-bg" style="position:absolute;inset:0;z-index:0;background-color:#000;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 1px,transparent 0,transparent 40px);pointer-events:none;"></div>
+            <div id="cemp">민원을 선택하세요</div>
+          </div>
+        </div>
+
+        <!-- 게시판 -->
+        <div class="pn" id="pn-board">
+          <div id="board-bg" class="st-30"></div>
+          <div id="board-hdr" class="st-diag">▣ 빌라 게시판</div>
+          <div id="board-list" style="padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;"></div>
+          <!-- 게시판 상세보기 -->
+          <div id="board-modal">
+            <div id="bm-hdr"><span>▣ 게시글</span><button onclick="closeBoardModal()">← 목록</button></div>
+            <div id="bm-body">
+              <div id="bm-meta"></div>
+              <div id="bm-title"></div>
+              <div id="bm-content"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 단서 -->
+        <div class="pn" id="pn-clues">
+          <div id="clue-hdr">▣ 수집된 단서</div>
+          <div id="clue-list"><div id="clue-empty">아직 수집된 단서가 없습니다.<br><br>빌라를 조사하세요.</div></div>
+        </div>
+
+        <!-- CCTV -->
+        <div class="pn" id="pn-cctv">
+          <div class="cf" onclick="bigCC('CAM-01 / 1F 복도')"><img class="cf-bg" src="배경/CCTV/1F 복도.png" onerror="this.style.visibility='hidden'" alt=""><div class="cfsc"></div><div class="cf-phosphor"></div><div class="cfn"></div><div class="cfscan"></div><div class="cfband"></div><div class="cf-glitch"></div><div class="cflbl">CAM-01 / 1F 복도</div><div class="cfrec">REC</div><div class="cftime" id="ct0"></div></div>
+          <div class="cf" onclick="bigCC('CAM-02 / 2F 복도')"><img class="cf-bg" src="배경/CCTV/2F 복도.png" onerror="this.style.visibility='hidden'" alt=""><div class="cfsc"></div><div class="cf-phosphor"></div><div class="cfn"></div><div class="cfscan"></div><div class="cfband" style="animation-duration:7s;animation-delay:-2.5s"></div><div class="cf-glitch"></div><div class="cflbl">CAM-02 / 2F 복도</div><div class="cfrec">REC</div><div class="cftime" id="ct1"></div></div>
+          <div class="cf" onclick="bigCC('CAM-03 / 쓰레기장')"><img class="cf-bg" src="배경/CCTV/쓰레기장.png" onerror="this.style.visibility='hidden'" alt=""><div class="cfsc"></div><div class="cf-phosphor"></div><div class="cfn"></div><div class="cfscan"></div><div class="cfband" style="animation-duration:6s;animation-delay:-1.3s"></div><div class="cf-glitch"></div><div class="cflbl">CAM-03 / 쓰레기장</div><div class="cfrec">REC</div><div class="cftime" id="ct2"></div></div>
+          <div class="cf" onclick="bigCC('CAM-04 / 흡연실')"><img class="cf-bg" src="배경/CCTV/흡연실.png" onerror="this.style.visibility='hidden'" alt=""><div class="cfsc"></div><div class="cf-phosphor"></div><div class="cfn"></div><div class="cfscan"></div><div class="cfband" style="animation-duration:8.5s;animation-delay:-4s"></div><div class="cf-glitch"></div><div class="cflbl">CAM-04 / 흡연실</div><div class="cfrec">REC</div><div class="cftime" id="ct3"></div></div>
+        </div>
+
+        <!-- 관리일지 -->
+        <div class="pn" id="pn-log">
+          <div id="log-bg" style="position:absolute;inset:0;z-index:0;background-color:#000;background-image:repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(255,255,255,.07) 29px,rgba(255,255,255,.07) 30px);pointer-events:none;"></div>
+          <div id="log-hdr" class="st-diag"><span>▣ 관리일지</span><span id="log-saved" style="font-size:9px;color:#333"></span></div>
+          <textarea id="logta" placeholder="오늘 있었던 일을 기록하세요."></textarea>
+        </div>
+
+        <div id="ccbig">
+          <div id="ccbighdr">
+            <span id="ccbigtitle">-</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <!-- 장소 이동 버튼 -->
+              <div id="cc-goto-btns" style="display:flex;gap:6px;">
+                <!-- 버튼은 bigCC()에서 동적으로 생성 -->
+              </div>
+              <button id="ccx" onclick="closeCC()">[ 닫기 ]</button>
+            </div>
+          </div>
+          <div id="ccbigf">
+            <img id="ccbig-img" src="" onerror="this.style.visibility='hidden'" alt="">
+            <div class="cfsc" style="position:absolute;inset:0"></div>
+            <div class="cf-phosphor"></div>
+            <div class="cfn" style="position:absolute;inset:0;animation-duration:.07s"></div>
+            <div class="cfscan" style="position:absolute;inset:0"></div>
+            <div class="cfband"></div>
+            <div class="cf-glitch"></div>
+            <div class="cfrec" style="position:absolute;top:10px;right:14px;font-size:10px;color:#fff;z-index:5">REC</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="blog"><span id="blogtxt"><span class="lt2" id="blogmsg">■ 시스템 시작. 행복빌라 관리 시스템 온라인.</span><span id="bcur"></span></span>
+    <button id="settings-btn" onclick="toggleSettings()">⚙ SET</button>
+  </div>
+</div>
+</div>
+
+<!-- 호감도 토스트 -->
+<div id="favor-toast"></div>
+<div id="favor-center"></div>
+
+<!-- 설정 패널 -->
+<div id="settings-panel">
+  <div id="settings-hdr"><span>▣ SETTINGS</span><button onclick="toggleSettings()">✕</button></div>
+  <div id="settings-body">
+    <div class="s-row">
+      <div class="s-lbl">브금 <em id="bgm-vol-val">35</em></div>
+      <div class="s-ctrl">
+        <button class="s-mute" id="bgm-mute-btn" onclick="toggleMute('bgm')">OFF</button>
+        <input type="range" class="s-slider" id="bgm-vol" min="0" max="100" value="35" oninput="setVol('bgm',this.value)">
+      </div>
+    </div>
+    <div class="s-divider"></div>
+    <div class="s-row">
+      <div class="s-lbl">클릭음 <em id="sfx-vol-val">100</em></div>
+      <div class="s-ctrl">
+        <button class="s-mute" id="sfx-mute-btn" onclick="toggleMute('sfx')">OFF</button>
+        <input type="range" class="s-slider" id="sfx-vol" min="0" max="100" value="100" oninput="setVol('sfx',this.value)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 장소 화면 (쓰레기장 / 흡연실 등) ══ -->
+<div id="loc-screen">
+  <div id="loc-hdr">
+    <span id="loc-hdr-title">■ 장소</span>
+    <button id="loc-back" onclick="closeLoc()">← 경비실로</button>
+  </div>
+  <div id="loc-main">
+    <img id="loc-bg-img" src="" alt="" onerror="this.style.visibility='hidden'">
+    <div id="loc-bg-overlay"></div>
+    <div id="loc-namebox" id="loc-name-lbl">???</div>
+    <div id="loc-sprites"></div>
+    <div id="loc-dbox-wrap">
+      <div id="loc-dbox">
+        <div id="loc-dname" style="display:none">???</div>
+        <div id="loc-dtext" onclick="advanceLocDialogue()"></div>
+        <div id="loc-choices"></div>
+        <div id="loc-advance" style="display:none">▼ CLICK</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 대면 화면 ══ -->
+<div id="face-screen">
+  <!-- 좌측: 씬 + 대화창 -->
+  <div id="face-left">
+    <div id="face-scene">
+      <!-- 장소 표시 — WoH 스타일 -->
+      <div id="face-loc-box" style="display:none"><span id="face-loc-txt">???</span></div>
+      <!-- 배경: 배경/101-집.png — src는 JS에서 설정 -->
+      <img id="face-bg-img" src="" alt=""
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:1;"
+        onerror="this.style.visibility='hidden'">
+    </div>
+    <div id="face-dbox-wrap">
+      <div id="face-dbox" class="rough-frame">
+        <div id="face-dname">???</div>
+        <div id="face-dtext" onclick="advanceDialogue()">클릭하여 대화를 진행하세요.</div>
+        <div id="face-choices"></div>
+        <div id="face-advance">▼ CLICK</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측 패널 -->
+  <div id="face-right" class="rough-frame">
+    <div id="face-topinfo">
+      <span class="face-daybadge" id="face-daydisp">DAY 1</span>
+      <span id="face-clk">--:--</span>
+    </div>
+    <div id="face-charcard">
+      <div class="fc-row"><div class="fc-lbl">NAME</div><div class="fc-val" id="fc-name">???</div></div>
+      <div class="fc-row"><div class="fc-lbl">ROOM</div><div class="fc-val" id="fc-room">??? 호</div></div>
+      <div class="fc-row">
+        <div class="fc-lbl">호감도</div>
+        <div class="fc-val" id="fc-fav">- / 100</div>
+        <div class="fc-favtrack"><div class="fc-favfill" id="fc-favfill" style="width:0%"></div></div>
+      </div>
+      <div class="fc-divider"></div>
+      <div class="fc-lbl" style="color:#333">[ 장소 ]</div>
+      <div class="fc-val" id="fc-loc" style="font-size:11px;color:#666">???호 앞</div>
+    </div>
+    <div id="face-favor-log"></div>
+    
+    <!-- 신규: 캐릭터(NPC) 정사각형 초상화 -->
+    <div id="face-npcbox">
+      <img id="face-char-img" src="" alt=""
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:bottom center;z-index:2;"
+        onerror="this.style.visibility='hidden'">
+    </div>
+
+    <button id="face-back" onclick="closeFace()">← 경비실로 돌아가기</button>
+    <div id="face-playerbox">
+      <img src="캐릭터/player.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;" onerror="this.style.display='none'">
+    </div>
+  </div>
+</div>
+
+  <div id="day-transition-text"></div>
+</div>
+<div id="fade"><div id="fademsg"></div></div>
+
+<!-- ══ 엔딩 화면 ══ -->
+<div id="ending-screen" style="display:none;position:fixed;inset:0;background:#000;z-index:99999;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',Courier,monospace;cursor:pointer;">
+  <div id="ending-lines" style="max-width:500px;width:88%;max-height:55vh;overflow-y:auto;margin-bottom:32px;"></div>
+  <div id="ending-title-box" style="display:none;text-align:center;margin-bottom:28px;">
+    <div id="ending-title-tag" style="font-size:10px;color:#555;letter-spacing:4px;margin-bottom:8px;"></div>
+    <div id="ending-title-main" style="font-size:20px;color:#fff;letter-spacing:3px;font-weight:bold;"></div>
+  </div>
+  <div id="ending-credit" style="display:none;font-size:10px;color:#444;letter-spacing:3px;text-align:center;line-height:2.5;margin-bottom:28px;"></div>
+  <button id="ending-close-btn" onclick="location.reload()" style="display:none;font-family:'Courier New',Courier,monospace;font-size:11px;color:#fff;background:#000;border:1px solid #444;padding:8px 24px;cursor:pointer;letter-spacing:2px;">[ 처음으로 ]</button>
+</div>
+
+<!-- ══ 개미 이스터에그 ══ -->
+<div id="ant-el" style="display:none;">
+  <img src="개미.png" alt="" onerror="this.parentElement.querySelector('.ant-fb').style.display='block';this.style.display='none';">
+  <!-- png 없을 때 폴백 이모지 -->
+  <div class="ant-fb" style="display:none;font-size:22px;text-align:center;line-height:28px;">🐜</div>
+</div>
+<div id="ant-ctx">
+  <div class="ant-ctx-item" onclick="antPick()">줍는다</div>
+  <div class="ant-ctx-item" onclick="antLeave()">놔둔다</div>
+</div>
+<div id="ant-toast"></div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+
+</body>
+</html>
