@@ -1105,7 +1105,7 @@ function triggerEventsForDay(day){
       executeEvent(evt);
     }
   });
-  // E2A Day5 — 1층 복도 방문 시 결판 씬이 뜨도록 state 세팅
+  // E2A Day5 — 1층 복도 이동 시 결판 씬이 열리도록 state만 세팅
   if(day===5 && _devEndingRoute==='END_2_A'){
     RES_EVENT_STATE['101']='EVT_D5_SHOWDOWN';
   }
@@ -1225,10 +1225,14 @@ function executeEvent(evt){
   } else if(evt.type==='face'){
     const resId=evt.resId;
     if(evt.state) RES_EVENT_STATE[resId] = evt.state;
+    const delay = evt.delay || 500;
     setTimeout(()=>{
+      // face-screen이 이미 열려있거나 CCTV 전체화면 중이면 실행 안 함
+      if(document.getElementById('face-screen')?.classList.contains('on')) return;
+      if(document.getElementById('ccbig')?.classList.contains('on')) return;
       if(typeof antHideFace==='function')antHideFace();
       openFace(resId);
-    }, evt.delay || 500);
+    }, delay);
     DONE_EVENTS.add(evt.id); 
     checkTriggers();
   }
@@ -1318,6 +1322,9 @@ function pickChatChoice(resId, idx, evtId){
     }
     if(choice._face){
       setTimeout(()=>{
+        // 다른 탭이 열려있거나 face-screen이 이미 활성이면 취소
+        if(activeTab && activeTab !== 'res') return;
+        if(document.getElementById('face-screen')?.classList.contains('on')) return;
         if(typeof antHideFace==='function')antHideFace();
         closeCC();
         if(curR)closeRes();
@@ -1632,8 +1639,8 @@ function openFace(resId){
       const flagOk=!candidate.requireFlag||getFlag(candidate.requireFlag);
       const dayOk=!candidate.requireDay||(currentDay>=candidate.requireDay);
       const routeOk=!candidate.requireRoute||(_devEndingRoute===candidate.requireRoute);
-      // 복도/장소 씬은 doVisit(직접 방문)으로 열리면 안 됨 — loc이 호수와 다른 경우 폴백
-      const isLocScene = candidate.loc && !candidate.loc.includes(resId+'호') && !candidate._forceOpen;
+      // 복도/장소 씬(_hideCharPanel)은 loc 체크 건너뜀. 그 외 씬만 loc 체크로 doVisit 폴백 처리.
+      const isLocScene = !candidate._hideCharPanel && candidate.loc && !candidate.loc.includes(resId+'호') && !candidate._forceOpen;
       if(flagOk&&dayOk&&routeOk&&!isLocScene) scripted=candidate;
     }
     if(!scripted) scripted=FACE_SCRIPTS['DEFAULT_VISIT_'+resId]||FACE_SCRIPTS['default'];
@@ -1682,9 +1689,9 @@ function openFace(resId){
   }
 
   const elMap={
-    'fc-name':profileNameFor(resId),
-    'fc-room':faceScript.room||r.room,
-    'fc-fav':r.favor+' / 100',
+    'fc-name': faceScript._hideCharPanel ? '—' : profileNameFor(resId),
+    'fc-room': faceScript._hideCharPanel ? (faceScript.loc||'') : (faceScript.room||r.room),
+    'fc-fav':  faceScript._hideCharPanel ? '' : (r.favor+' / 100'),
     'fc-loc':faceScript.loc||r.room+' 앞',
     'face-daydisp':document.getElementById('daydisp')?.textContent||'DAY 1',
     'face-dname':'—'
@@ -1693,7 +1700,7 @@ function openFace(resId){
     const el=document.getElementById(id);if(el)el.textContent=val;
   });
   const favfill=document.getElementById('fc-favfill');
-  if(favfill)favfill.style.width=r.favor+'%';
+  if(favfill)favfill.style.width= faceScript._hideCharPanel ? '0%' : r.favor+'%';
   const locBox=document.getElementById('face-loc-box');
   const locTxt=document.getElementById('face-loc-txt');
   if(locTxt)locTxt.textContent=faceScript.loc||r.room+' 앞';
@@ -2077,7 +2084,7 @@ let locScript=null,locLineIdx=0,locPhase='narrate';
 
 function gotoLocation(locName){
   closeCC();
-  // E2A Day5 — 1층 복도 방문 시 결판 씬 인터셉트
+  // E2A Day5 — 1층 복도 이동 시 결판 씬 인터셉트
   if(locName==='1F복도' && currentDay===5 && _devEndingRoute==='END_2_A'){
     if(!DONE_EVENTS.has('EVT_D5_SHOWDOWN_DONE')){
       RES_EVENT_STATE['101']='EVT_D5_SHOWDOWN';

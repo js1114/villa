@@ -1015,6 +1015,7 @@ const FACE_SCRIPTS={
     room:'1층 복도', loc:'1층 복도',
     bg:'배경/1F복도.png', char:'x',
     onEnd:'EVT_D5_SHOWDOWN_PRELUDE',
+    _hideCharPanel:true,
     lines:[
       '(복도 끝에 두 사람이 있다.)',
       '(마주 보고 서 있다. 아무 소리도 안 난다.),,',
@@ -1060,6 +1061,7 @@ const FACE_SCRIPTS={
     room:'1층 복도', loc:'1층 복도',
     bg:'배경/1F복도.png', char:'x',
     onEnd:'EVT_D5_SHOWDOWN_PRELUDE',
+    _hideCharPanel:true,
     lines:[
       '(복도에서 소리가 났다. 경비실까지 들릴 정도다.),,',
       '!101 !102',
@@ -1252,6 +1254,7 @@ const FACE_SCRIPTS={
     room:'1층 복도', loc:'1층 복도',
     bg:'배경/1F복도.png', char:'x',
     onEnd:null,
+    _hideCharPanel:true,
     lines:[
       '(1층 복도.),,',
       '(계단 맨 아래 칸에 명성이 앉아 있다.)',
